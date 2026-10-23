@@ -294,7 +294,7 @@ public class HomeActivity extends Activity {
             @Override
             public void run() {
                 final List<Dhmz.Warning> warnings = Dhmz.current(app);
-                final Hajduk.Match match = Hajduk.next(app);
+                final Klub.Match match = Klub.next(app);
                 ui.post(new Runnable() {
                     @Override
                     public void run() {
@@ -321,14 +321,14 @@ public class HomeActivity extends Activity {
         updateNoticeRow();
     }
 
-    /** "⚽ Istra 1961 – Hajduk · sub 26. 10. u 18:00 · Max Sport 1" (natjecanje samo ako nije HNL). */
-    private void showMatch(Hajduk.Match m) {
+    /** "⚽ Istra 1961 – Hajduk · sub 26. 10. u 18:00 · Max Sport 1" (natjecanje samo ako nije HNL); klub iz postavki. */
+    private void showMatch(Klub.Match m) {
         matchPill.setVisibility(m == null ? View.GONE : View.VISIBLE);
         if (m != null) {
             android.text.SpannableStringBuilder s = new android.text.SpannableStringBuilder("⚽  ");
             s.append(m.home).append(" – ").append(m.away);
             int dim = s.length();
-            s.append("  ·  ").append(Hajduk.when(m));
+            s.append("  ·  ").append(Klub.when(m));
             if (!m.competition.isEmpty() && !"HNL".equals(m.competition)) s.append("  ·  ").append(m.competition);
             s.append("  ·  ").append(m.channels.isEmpty() ? "TV kanal još nije objavljen" : m.channels);
             s.setSpan(new android.text.style.ForegroundColorSpan(Glass.TEXT_DIM), dim, s.length(), 0);
@@ -347,7 +347,7 @@ public class HomeActivity extends Activity {
         hint.setVisibility(any ? View.GONE : View.VISIBLE);
     }
 
-    /** Tanki redak staklenih "pilula" ispod ploča: Hajduk i DHMZ upozorenje; skriven kad nema ničeg. */
+    /** Tanki redak staklenih "pilula" ispod ploča: utakmica kluba i DHMZ upozorenje; skriven kad nema ničeg. */
     private View buildNoticeRow() {
         noticeRow = new LinearLayout(this);
         noticeRow.setOrientation(LinearLayout.HORIZONTAL);

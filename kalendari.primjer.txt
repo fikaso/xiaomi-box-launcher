@@ -1,0 +1,11 @@
+# Primjer za kalendari.txt (nije obavezan). Kopiraj u kalendari.txt i pošalji na box isto kao
+# postavke.txt. Ova datoteka sadrži TAJNE adrese i ključeve: nikad je ne commitaj ni ne objavljuj.
+# Kad postoji, ispod prognoze i kalendara pojavi se ploča DOGAĐAJI | TODO.
+
+# Google kalendar: kalendar.google.com u pregledniku → Postavke → odaberi kalendar →
+# "Integriraj kalendar" → "Tajna adresa u iCal formatu". Jedan redak po kalendaru.
+https://calendar.google.com/calendar/ical/XXXXXXXX%40group.calendar.google.com/private-XXXXXXXXXXXXXXXX/basic.ics
+
+# Todoist (po želji): Postavke → Integracije → Za programere → API token.
+# Iza tokena ime projekta čiji se zadaci prikazuju (bez imena: "TV").
+todoist: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX TV

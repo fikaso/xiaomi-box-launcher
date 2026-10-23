@@ -1,7 +1,7 @@
 # Lagani Launcher i čišćenje za Xiaomi Mi Box
 
 ## Što je u paketu
-- **LaganiLauncher.apk**: minimalni početni ekran (16 KB). Nema preporuka, ne koristi mrežu, nema animacija ni pozadinskih servisa.
+- **LaganiLauncher.apk**: lagan početni ekran (~60 KB, iz GitHub Releases). Nema preporuka ni reklama ni pozadinskih servisa; s interneta dohvaća samo prognozu, praznike, utakmicu kluba, DHMZ upozorenja i (ako ih postaviš) kalendar i Todoist.
   - Redoslijed: TiviMate, Stremio, SmartTube, YouTube, a zatim ostale abecedno.
   - Gumb **Auto TiviMate**: kad je uključen, TiviMate se otvori sam nakon paljenja boxa.
   - Dugi pritisak na OK ili tipka Menu na aplikaciji otvara izbornik: deinstaliraj, očisti cache, sakrij, otvaraj nakon paljenja.

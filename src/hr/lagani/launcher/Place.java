@@ -7,7 +7,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -21,7 +20,6 @@ import java.net.URLEncoder;
  */
 final class Place {
 
-    static final String CONFIG = "postavke.txt";
     private static final Place DEFAULT = new Place("Zagreb", 45.81, 15.98, "Grad Zagreb");
 
     final String name;
@@ -72,27 +70,8 @@ final class Place {
         }
     }
 
-    /** Ime iz retka "mjesto:" u postavke.txt, ili null. */
     private static String configured(Context context) {
-        File f = new File(ReceiveActivity.receiveDir(context), CONFIG);
-        if (!f.isFile()) return null;
-        try {
-            java.io.BufferedReader r = new java.io.BufferedReader(new java.io.InputStreamReader(
-                    new java.io.FileInputStream(f), "UTF-8"));
-            try {
-                for (String line; (line = r.readLine()) != null; ) {
-                    line = line.trim();
-                    if (line.toLowerCase(java.util.Locale.ROOT).startsWith("mjesto:")) {
-                        String name = line.substring("mjesto:".length()).trim();
-                        return name.isEmpty() ? null : name;
-                    }
-                }
-            } finally {
-                r.close();
-            }
-        } catch (IOException ignored) {
-        }
-        return null;
+        return Postavke.get(context, "mjesto");
     }
 
     private static SharedPreferences store(Context context) {

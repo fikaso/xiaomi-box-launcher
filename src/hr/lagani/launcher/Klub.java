@@ -1,6 +1,7 @@
 package hr.lagani.launcher;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -19,14 +21,20 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * Sljedeća utakmica Hajduka s FotMoba (neslužbeni, ali javni JSON): protivnik, natjecanje i
+ * Sljedeća utakmica kluba s FotMoba (neslužbeni, ali javni JSON): protivnik, natjecanje i
  * vrijeme iz podataka o momčadi, a hrvatski TV kanal iz njihovog TV rasporeda (samo ~10 dana
  * unaprijed, pa kanal zna doći naknadno). Sofascore odbija zahtjeve koji nisu iz preglednika.
+ *
+ * Klub se bira retkom "klub: Rijeka" u postavke.txt (ime se potraži na FotMobu, a može i
+ * FotMob id); bez retka je Hajduk, a "klub: nijedan" skriva pločicu.
  */
-final class Hajduk {
+final class Klub {
 
-    private static final String TEAM = "https://www.fotmob.com/api/data/teams?id=10154&ccode3=HRV";
+    private static final String DEFAULT_NAME = "Hajduk";
+    private static final String DEFAULT_ID = "10154";
+    private static final String TEAM = "https://www.fotmob.com/api/data/teams?ccode3=HRV&id=";
     private static final String TV = "https://www.fotmob.com/api/data/tvlistings?countryCode=HR";
+    private static final String SEARCH = "https://www.fotmob.com/api/data/search/suggest?lang=en&term=";
     private static final long REFRESH_MS = 3 * 60 * 60 * 1000L;
     /** Utakmica se pokazuje još dva sata nakon početka. */
     private static final long SHOW_AFTER_KICKOFF_MS = 2 * 60 * 60 * 1000L;
@@ -45,19 +53,23 @@ final class Hajduk {
         }
     }
 
-    private Hajduk() {
+    private Klub() {
     }
 
     /** Zadnja poznata utakmica; dohvaća novu svaka 3 sata ili kad je stara prošla. Izvan glavne niti. */
     static Match next(Context context) {
-        File cache = new File(context.getFilesDir(), "hajduk.json");
-        Match m = read(cache);
+        String wanted = Postavke.get(context, "klub");
+        if (wanted == null) wanted = DEFAULT_NAME;
+        if (wanted.equalsIgnoreCase("nijedan") || wanted.equals("-")) return null;
+
+        File cache = new File(context.getFilesDir(), "klub.json");
+        Match m = read(cache, wanted);
         long now = System.currentTimeMillis();
-        boolean stale = !cache.isFile() || now - cache.lastModified() > REFRESH_MS
-                || (m != null && now > m.kickoff + SHOW_AFTER_KICKOFF_MS);
+        boolean stale = m == null || now - cache.lastModified() > REFRESH_MS || now > m.kickoff + SHOW_AFTER_KICKOFF_MS;
         if (stale) {
             try {
-                JSONObject fresh = fetchMatch();
+                String id = teamId(context, wanted);
+                JSONObject fresh = fetchMatch(id, wanted);
                 write(cache, fresh.toString());
                 m = parse(fresh);
             } catch (Exception ignored) {
@@ -68,15 +80,37 @@ final class Hajduk {
         return m;
     }
 
-    private static JSONObject fetchMatch() throws Exception {
-        JSONObject next = new JSONObject(get(TEAM)).getJSONObject("overview").getJSONObject("nextMatch");
+    /** FotMob id kluba: broj iz postavki, Hajduk ili prvi klub iz pretrage (zapamti se). */
+    private static String teamId(Context context, String wanted) throws Exception {
+        if (wanted.matches("\\d+")) return wanted;
+        if (wanted.equalsIgnoreCase(DEFAULT_NAME)) return DEFAULT_ID;
+        SharedPreferences sp = context.getSharedPreferences("klub", Context.MODE_PRIVATE);
+        if (wanted.equalsIgnoreCase(sp.getString("query", ""))) return sp.getString("id", "");
+        JSONArray groups = new JSONArray(get(SEARCH + URLEncoder.encode(wanted, "UTF-8")));
+        for (int g = 0; g < groups.length(); g++) {
+            JSONArray list = groups.getJSONObject(g).optJSONArray("suggestions");
+            for (int i = 0; list != null && i < list.length(); i++) {
+                JSONObject s = list.getJSONObject(i);
+                if (!"team".equals(s.optString("type"))) continue;
+                sp.edit().putString("query", wanted).putString("id", s.getString("id")).apply();
+                return s.getString("id");
+            }
+        }
+        throw new IOException("Nema kluba " + wanted);
+    }
+
+    private static JSONObject fetchMatch(String teamId, String ourName) throws Exception {
+        JSONObject next = new JSONObject(get(TEAM + teamId)).getJSONObject("overview").getJSONObject("nextMatch");
+        JSONObject home = next.getJSONObject("home"), away = next.getJSONObject("away");
         JSONObject out = new JSONObject();
-        out.put("home", next.getJSONObject("home").getString("name"));
-        out.put("away", next.getJSONObject("away").getString("name"));
+        // Naš klub piše se kako ga je korisnik upisao ("Hajduk"), protivnik skraćeno.
+        out.put("home", teamId.equals(home.optString("id")) ? ourName : shortName(home.getString("name")));
+        out.put("away", teamId.equals(away.optString("id")) ? ourName : shortName(away.getString("name")));
         out.put("competition", next.optJSONObject("tournament") == null ? ""
                 : next.getJSONObject("tournament").optString("name"));
         out.put("utc", next.getJSONObject("status").getString("utcTime"));
         out.put("channels", channels(String.valueOf(next.getLong("id"))));
+        out.put("for", ourName);
         return out;
     }
 
@@ -103,13 +137,12 @@ final class Hajduk {
         SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT);
         f.setTimeZone(TimeZone.getTimeZone("UTC"));
         long kickoff = f.parse(o.getString("utc").substring(0, 19)).getTime();
-        return new Match(shortName(o.getString("home")), shortName(o.getString("away")),
+        return new Match(o.getString("home"), o.getString("away"),
                 o.optString("competition"), o.optString("channels"), kickoff);
     }
 
-    /** "Hajduk Split" → "Hajduk", "NK Istra 1961" → "Istra 1961". */
+    /** "NK Istra 1961" → "Istra 1961", "HNK Rijeka" → "Rijeka". */
     private static String shortName(String name) {
-        if (name.startsWith("Hajduk")) return "Hajduk";
         return name.replaceFirst("^(H?NK|FK|GNK) ", "");
     }
 
@@ -130,7 +163,7 @@ final class Hajduk {
         c.setConnectTimeout(10000);
         c.setReadTimeout(20000);
         // Bez User-Agenta CloudFront vraća 403.
-        c.setRequestProperty("User-Agent", "LaganiLauncher/1.10 (Android TV)");
+        c.setRequestProperty("User-Agent", "LaganiLauncher (Android TV)");
         try {
             if (c.getResponseCode() != 200) throw new IOException("HTTP " + c.getResponseCode());
             InputStream in = c.getInputStream();
@@ -143,7 +176,8 @@ final class Hajduk {
         }
     }
 
-    private static Match read(File f) {
+    /** Zapamćena utakmica, ali samo ako je za klub koji je sad u postavkama. */
+    private static Match read(File f, String wanted) {
         if (!f.isFile()) return null;
         try {
             java.io.FileInputStream in = new java.io.FileInputStream(f);
@@ -155,7 +189,8 @@ final class Hajduk {
                     if (r < 0) break;
                     n += r;
                 }
-                return parse(new JSONObject(new String(b, 0, n, "UTF-8")));
+                JSONObject o = new JSONObject(new String(b, 0, n, "UTF-8"));
+                return wanted.equals(o.optString("for")) ? parse(o) : null;
             } finally {
                 in.close();
             }
