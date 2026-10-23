@@ -2,6 +2,10 @@
 kalendari.txt
 kamera-reolink.m3u
 *.m3u
+*.m3u8
+
+# IPTV liste i TiviMate backupi su korisnikovi (adrese i prijave za liste)
+*.tmb
 *.p12
 *.pass
 

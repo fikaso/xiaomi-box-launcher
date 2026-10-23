@@ -14,8 +14,9 @@ korisnik sjedi pred TV-om i povremeno mora nešto potvrditi daljinskim.
   to njegov box. Na mreži zna biti više boxova (npr. roditeljski).
 - Ne diraj aplikacije koje korisnik koristi. Popis za brisanje uvijek mu prvo pokaži.
 - `kalendari.txt` sadrži tajne (adresu kalendara, Todoist ključ): ne ispisuj ih u chat, ne
-  commitaj, ne stavljaj u repozitorij. `postavke.txt`, `kalendari.txt`, `*.m3u` i `backup-*/` su
-  u `.gitignore` i tako treba ostati.
+  commitaj, ne stavljaj u repozitorij. Isto vrijedi za IPTV liste i TiviMate backupe: to su
+  korisnikove liste s adresama i prijavama. `postavke.txt`, `kalendari.txt`, `*.m3u`, `*.m3u8`,
+  `*.tmb` i `backup-*/` su u `.gitignore` i tako treba ostati.
 - Ako je box zauzet (`dumpsys media_session` pokazuje `state=3`, netko gleda), ne otvaraj
   aplikacije na njemu; pitaj korisnika.
 - U Git Bashu na Windowsu putanje na boxu (`/sdcard/...`) prije `adb push` zaštiti s
@@ -44,9 +45,11 @@ korisnik sjedi pred TV-om i povremeno mora nešto potvrditi daljinskim.
    ekran, APK-ove aplikacija koje je korisnik sam instalirao i snimku ekrana, pa provjeri da
    ništa bitno nije prazno. Mora završiti s "Backup OK".
 2. **Podaci u aplikacijama** (bez roota se ne mogu kopirati izvana). Pitaj korisnika koje
-   aplikacije koristi i što bi mu bilo teško ponovno namjestiti, pa neka u njima napravi backup:
-   - **TiviMate**: Postavke → Općenito → Sigurnosna kopija podataka (sprema `.tmb` datoteku);
-     nađi je s `adb shell find /sdcard -name "*.tmb"` i `adb pull` u backup mapu.
+   aplikacije koristi i što bi mu bilo teško ponovno namjestiti, pa neka u njima napravi backup.
+   Za aplikacije koje nema preskoči (u `paketi-instalirani.txt` iz backupa vidiš što ima):
+   - **TiviMate** (`ar.tvplayer.tv`): Postavke → Općenito → Sigurnosna kopija podataka (sprema
+     `.tmb` datoteku); nađi je s `adb shell find /sdcard -name "*.tmb"` i `adb pull` u backup
+     mapu. Sadržaj ne otvaraj i ne ispisuj.
    - **SmartTube**: Postavke → Sigurnosno kopiranje.
    - **Stremio**: addoni i popisi su na Stremio računu; provjeri da je korisnik prijavljen.
    - Ostalo (IPTV liste, prijave): neka zapiše ili spremi na svoj način.

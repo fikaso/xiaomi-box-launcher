@@ -13,8 +13,8 @@
 
 ## Prije svega: backup
 Ništa ne mijenjaj dok nemaš backup.
-1. U aplikacijama koje koristiš spremi njihove podatke: **TiviMate** → Postavke → Općenito →
-   Sigurnosna kopija podataka (kopiraj `.tmb` datoteku na mobitel ili laptop), **SmartTube** →
+1. U aplikacijama koje koristiš spremi njihove podatke, npr. ako imaš **TiviMate**: Postavke → Općenito →
+   Sigurnosna kopija podataka (kopiraj `.tmb` datoteku na mobitel ili laptop; to su tvoje liste, ne stavljaj ih na GitHub), **SmartTube** →
    Postavke → Sigurnosno kopiranje. Zapiši IPTV liste i prijave koje bi ti bilo teško ponovno upisati.
 2. Ako imaš računalo s adb-om (vidi Korak 2): `sh backup.sh <IP boxa>`. Spremi postavke, popise
    aplikacija i APK-ove tvojih aplikacija u mapu `backup-<model>-<datum>/` i na kraju javi "Backup OK".
