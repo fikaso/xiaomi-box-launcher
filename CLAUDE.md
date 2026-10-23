@@ -6,6 +6,9 @@ korisnik sjedi pred TV-om i povremeno mora nešto potvrditi daljinskim.
 
 ## Pravila
 
+- **Bez potpunog backupa nema promjena.** Korak 3 (backup) je obavezan i ide prije čišćenja,
+  instalacije i postavki. Ako `backup.sh` javi grešku ili korisnik još nije spremio podatke iz
+  aplikacija, stani i riješi to; ne preskači ga ni kad korisnik žuri (objasni zašto).
 - **Prije bilo kakve promjene na boxu** pokaži korisniku model (`getprop ro.product.model`), ime
   (`settings get global device_name`), verziju Androida i slobodnu memoriju, i čekaj potvrdu da je
   to njegov box. Na mreži zna biti više boxova (npr. roditeljski).
@@ -33,11 +36,27 @@ korisnik sjedi pred TV-om i povremeno mora nešto potvrditi daljinskim.
    **Allow USB debugging** (najbolje uz "Always allow").
 3. Pokaži model, ime, Android, RAM (`cat /proc/meminfo | head -3`) i čekaj potvrdu (vidi Pravila).
 
-## 3. Backup
+## 3. Backup (obavezno, prije svega ostalog)
 
-U `backup-<model>-<datum>/` (u .gitignoreu) spremi:
-`pm list packages`, `settings list global|secure|system`, `getprop`. Ako koristi TiviMate,
-predloži da u TiviMateu napravi backup postavki.
+1. **Box:** `sh backup.sh <IP>` (na Windowsu u Git Bashu; ako `adb` nije u PATH-u:
+   `ADB_BIN=/put/do/adb.exe sh backup.sh <IP>`). Skripta sprema u `backup-<model>-<datum>/`
+   svojstva boxa, sve postavke, popise aplikacija (i ugašenih i maknutih), trenutni početni
+   ekran, APK-ove aplikacija koje je korisnik sam instalirao i snimku ekrana, pa provjeri da
+   ništa bitno nije prazno. Mora završiti s "Backup OK".
+2. **Podaci u aplikacijama** (bez roota se ne mogu kopirati izvana). Pitaj korisnika koje
+   aplikacije koristi i što bi mu bilo teško ponovno namjestiti, pa neka u njima napravi backup:
+   - **TiviMate**: Postavke → Općenito → Sigurnosna kopija podataka (sprema `.tmb` datoteku);
+     nađi je s `adb shell find /sdcard -name "*.tmb"` i `adb pull` u backup mapu.
+   - **SmartTube**: Postavke → Sigurnosno kopiranje.
+   - **Stremio**: addoni i popisi su na Stremio računu; provjeri da je korisnik prijavljen.
+   - Ostalo (IPTV liste, prijave): neka zapiše ili spremi na svoj način.
+3. Korisniku pokaži sažetak (mapa, broj aplikacija i APK-ova, što je spremljeno iz aplikacija) i
+   reci kako se vraća: `ciscenje/vrati.sh` vraća maknute sistemske aplikacije, APK-ovi iz
+   `apk/` se instaliraju s `adb install-multiple` (sve datoteke istog paketa zajedno), postavke
+   iz `settings-*.txt` se vraćaju ručno s `settings put`.
+4. Mapa je u `.gitignore` (zna sadržavati osobne podatke); nikad je ne commitaj.
+
+Tek kad je ovo gotovo, idi na čišćenje.
 
 ## 4. Čišćenje
 

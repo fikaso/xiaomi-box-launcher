@@ -9,6 +9,15 @@
   - Gumb **Primi datoteke**: slanje datoteka s laptopa ili mobitela na box (vidi niže).
 - **ciscenje/ocisti.sh**: miče sve nepotrebno (preporuke, Play Movies, igre, screensaver, Live Channels itd.), stavlja animacije na pola i, ako je Lagani Launcher instaliran, gasi Googleov početni ekran.
 - **ciscenje/vrati.sh**: vraća sve kako je bilo.
+- **backup.sh**: backup boxa s računala prije ikakvih promjena.
+
+## Prije svega: backup
+Ništa ne mijenjaj dok nemaš backup.
+1. U aplikacijama koje koristiš spremi njihove podatke: **TiviMate** → Postavke → Općenito →
+   Sigurnosna kopija podataka (kopiraj `.tmb` datoteku na mobitel ili laptop), **SmartTube** →
+   Postavke → Sigurnosno kopiranje. Zapiši IPTV liste i prijave koje bi ti bilo teško ponovno upisati.
+2. Ako imaš računalo s adb-om (vidi Korak 2): `sh backup.sh <IP boxa>`. Spremi postavke, popise
+   aplikacija i APK-ove tvojih aplikacija u mapu `backup-<model>-<datum>/` i na kraju javi "Backup OK".
 
 ## Korak 1: Instaliraj launcher na box
 Najlakše je preko aplikacije **Downloader** (by AFTVnews) ili **Send Files to TV**. Kopiraj APK na box i otvori ga.

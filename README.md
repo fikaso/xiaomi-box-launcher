@@ -32,10 +32,17 @@ Zatim kloniraj repozitorij, u njemu pokreni Claude Code i napiši, npr.:
 
 > Postavi mi ovaj launcher na moj Xiaomi box, IP adresa je 192.168.1.50.
 
-Claude slijedi [CLAUDE.md](CLAUDE.md): prvo ti pokaže koji je box i čeka potvrdu, napravi
-backup postavki, s tobom prođe popis aplikacija (što ostaje, što ide), instalira launcher i
-SmartTube, pa te pita za mjesto, klub, kalendar i Todoist i sam napravi i pošalje datoteke s
-postavkama. Na TV-u ćeš jednom morati potvrditi "Allow USB debugging".
+Claude slijedi [CLAUDE.md](CLAUDE.md):
+
+1. pokaže ti koji je box i čeka potvrdu,
+2. **napravi potpun backup** ([backup.sh](backup.sh): postavke, popisi aplikacija, APK-ovi tvojih
+   aplikacija) i s tobom spremi podatke iz aplikacija poput TiviMatea; dok backup nije gotov i
+   provjeren, na boxu ne mijenja ništa,
+3. s tobom prođe popis aplikacija (što ostaje, što ide) i počisti box,
+4. instalira launcher i SmartTube,
+5. pita te za mjesto, klub, kalendar i Todoist i sam napravi i pošalje datoteke s postavkama.
+
+Na TV-u ćeš jednom morati potvrditi "Allow USB debugging".
 
 ### B) Ručno
 
