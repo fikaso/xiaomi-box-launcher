@@ -47,9 +47,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Minimalni početni ekran: bez preporuka i bez mreže.
- * Samo mreža instaliranih aplikacija, sat i par gumba, u "staklenom" stilu Apple TV-a
- * (vidi {@link Glass}). Jedina animacija je kratko podizanje kartice u fokusu.
+ * Minimal home screen: no recommendations and no network.
+ * Just a grid of installed apps, a clock and a few buttons, in the Apple TV "glass" style
+ * (see {@link Glass}). The only animation is a short lift of the focused card.
  */
 public class HomeActivity extends Activity {
 
@@ -65,7 +65,7 @@ public class HomeActivity extends Activity {
         final String label;
         final Drawable art;
         final boolean isBanner;
-        /** Banner sa zaobljenim kutovima za trenutnu širinu kartice (vidi Glass.roundedBanner). */
+        /** Banner with rounded corners for the current card width (see Glass.roundedBanner). */
         Drawable rounded;
         int roundedWidth;
 
@@ -89,9 +89,9 @@ public class HomeActivity extends Activity {
     private TextView weatherSymbol;
     private TextView weatherNow;
     private TextView weatherInfo;
-    private final TextView[][] forecast = new TextView[3][3]; // [dan][naziv, znak, temperature]
+    private final TextView[][] forecast = new TextView[3][3]; // [day][name, symbol, temperatures]
     private boolean weatherLoading;
-    private final TextView[][] agendaRows = new TextView[3][2]; // [redak][dan, sat i naslov]
+    private final TextView[][] agendaRows = new TextView[3][2]; // [row][day, time and title]
     private TextView agendaEmpty;
     private android.widget.ScrollView todoScroll;
     private LinearLayout todoList;
@@ -109,15 +109,15 @@ public class HomeActivity extends Activity {
     private TextView matchPill;
     private TextView hint;
 
-    /** Praznici i dan u tjednu na ploči mjeseca: topla crvena kao u Appleovom kalendaru. */
+    /** Holidays and the weekday on the month panel: warm red as in Apple's Calendar. */
     private static final int HOLIDAY = Color.rgb(255, 107, 94);
-    /** Dan s događajem iz osobnog kalendara (samo MIBOX4): plavo kao na iPhoneu. */
+    /** Day with an event from the personal calendar (MIBOX4 only): blue as on the iPhone. */
     private static final int EVENT = Color.rgb(100, 190, 255);
     private static final String[] WEEKDAYS = {"nedjelja", "ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota"};
     private static final String[] MONTHS = {"siječanj", "veljača", "ožujak", "travanj", "svibanj", "lipanj",
             "srpanj", "kolovoz", "rujan", "listopad", "studeni", "prosinac"};
 
-    /** Svakih 30 min: vrijeme (ako je staro) i kalendar (zbog prelaska na novi dan). */
+    /** Every 30 min: weather (if stale) and calendar (for the rollover to a new day). */
     private final Runnable weatherTick = new Runnable() {
         @Override
         public void run() {
@@ -179,7 +179,7 @@ public class HomeActivity extends Activity {
         super.onPause();
     }
 
-    // ---------------------------------------------------------------- Vrijeme
+    // ---------------------------------------------------------------- Weather
 
     private void refreshWeather() {
         Weather cached = Weather.load(this);
@@ -193,8 +193,8 @@ public class HomeActivity extends Activity {
                 try {
                     w = Weather.fetch(app);
                 } catch (Exception e) {
-                    // Nema mreže ili servis ne radi: ostaje zadnje poznato vrijeme.
-                    android.util.Log.w("LaganiLauncher", "Vrijeme nije dohvaćeno", e);
+                    // No network or the service is down: the last known weather stays.
+                    android.util.Log.w("LaganiLauncher", "Weather fetch failed", e);
                 }
                 final Weather result = w;
                 ui.post(new Runnable() {
@@ -218,7 +218,7 @@ public class HomeActivity extends Activity {
         String desc = Weather.description(w.code, w.day);
         weatherInfo.setText(w.place + (desc.isEmpty() ? "" : " · " + desc)
                 + "\n");
-        // Sve trake dijele isto mjerilo (najniža i najviša od svih prikazanih dana).
+        // All bars share the same scale (lowest and highest of all shown days).
         int lo = today.min, hi = today.max;
         for (int i = 1; i < w.days.size() && i <= forecast.length; i++) {
             lo = Math.min(lo, w.days.get(i).min);
@@ -237,7 +237,7 @@ public class HomeActivity extends Activity {
         }
     }
 
-    // ---------------------------------------------------------------- Kalendar
+    // ---------------------------------------------------------------- Calendar
 
     private void refreshAgenda() {
         final Context app = getApplicationContext();
@@ -245,10 +245,10 @@ public class HomeActivity extends Activity {
             @Override
             public void run() {
                 final boolean personal = Agenda.personal(app);
-                // Više događaja nego što stane u popis: ostali samo obojaju svoj dan u mjesecu.
+                // More events than fit in the list: the rest only color their day in the month.
                 final List<Agenda.Item> items = personal ? Agenda.upcoming(app, 40) : new ArrayList<Agenda.Item>();
                 final List<Todo.Item> todos = personal ? Todo.open(app, 30) : null;
-                // Do kraja idućeg mjeseca, da se vidi i sljedeći praznik kad ga ovaj mjesec nema.
+                // Up to the end of next month, so the next holiday shows even when this month has none.
                 java.util.Calendar from = monthStart();
                 java.util.Calendar to = (java.util.Calendar) from.clone();
                 to.add(java.util.Calendar.MONTH, 2);
@@ -277,7 +277,7 @@ public class HomeActivity extends Activity {
             for (TextView t : agendaRows[i]) t.setVisibility(has ? View.VISIBLE : View.GONE);
             if (!has) continue;
             Agenda.Item it = items.get(i);
-            // Dan se piše samo uz prvi događaj tog dana, kao u kalendaru na mobitelu.
+            // The day is shown only next to that day's first event, as in a phone calendar.
             boolean sameDay = i > 0 && items.get(i - 1).day == it.day;
             agendaRows[i][0].setText(sameDay ? "" : Agenda.dayLabel(it.day));
             agendaRows[i][1].setText(it.time.isEmpty() ? it.title : it.time + "  " + it.title);
@@ -286,7 +286,7 @@ public class HomeActivity extends Activity {
         agendaEmpty.setText("Nema događaja");
     }
 
-    // ---------------------------------------------------------------- Obavijesti
+    // ---------------------------------------------------------------- Notices
 
     private void refreshNotices() {
         final Context app = getApplicationContext();
@@ -294,7 +294,7 @@ public class HomeActivity extends Activity {
             @Override
             public void run() {
                 final List<Dhmz.Warning> warnings = Dhmz.current(app);
-                final Klub.Match match = Klub.next(app);
+                final Club.Match match = Club.next(app);
                 ui.post(new Runnable() {
                     @Override
                     public void run() {
@@ -306,7 +306,7 @@ public class HomeActivity extends Activity {
         }, "notices").start();
     }
 
-    /** Najvažnije DHMZ upozorenje (ono koje traje, pa najviša razina); ostala samo kao "+N". */
+    /** The most important DHMZ warning (the ongoing one, then the highest level); the rest only as "+N". */
     private void showWarnings(List<Dhmz.Warning> warnings) {
         warningPill.setVisibility(warnings.isEmpty() ? View.GONE : View.VISIBLE);
         if (!warnings.isEmpty()) {
@@ -321,14 +321,14 @@ public class HomeActivity extends Activity {
         updateNoticeRow();
     }
 
-    /** "⚽ Istra 1961 – Hajduk · sub 26. 10. u 18:00 · Max Sport 1" (natjecanje samo ako nije HNL); klub iz postavki. */
-    private void showMatch(Klub.Match m) {
+    /** "⚽ Istra 1961 – Hajduk · sub 26. 10. u 18:00 · Max Sport 1" (competition only if not HNL); club from {@code club:} in settings.txt. */
+    private void showMatch(Club.Match m) {
         matchPill.setVisibility(m == null ? View.GONE : View.VISIBLE);
         if (m != null) {
             android.text.SpannableStringBuilder s = new android.text.SpannableStringBuilder("⚽  ");
             s.append(m.home).append(" – ").append(m.away);
             int dim = s.length();
-            s.append("  ·  ").append(Klub.when(m));
+            s.append("  ·  ").append(Club.when(m));
             if (!m.competition.isEmpty() && !"HNL".equals(m.competition)) s.append("  ·  ").append(m.competition);
             s.append("  ·  ").append(m.channels.isEmpty() ? "TV kanal još nije objavljen" : m.channels);
             s.setSpan(new android.text.style.ForegroundColorSpan(Glass.TEXT_DIM), dim, s.length(), 0);
@@ -343,11 +343,11 @@ public class HomeActivity extends Activity {
             any |= noticeRow.getChildAt(i).getVisibility() == View.VISIBLE;
         }
         noticeRow.setVisibility(any ? View.VISIBLE : View.GONE);
-        // Redak obavijesti pomakne aplikacije prema dnu, pa uputa tada ne stane ispod njih.
+        // The notice row pushes the apps down, so the hint no longer fits below them.
         hint.setVisibility(any ? View.GONE : View.VISIBLE);
     }
 
-    /** Tanki redak staklenih "pilula" ispod ploča: utakmica kluba i DHMZ upozorenje; skriven kad nema ničeg. */
+    /** Thin row of glass "pills" below the panels: the club's match and DHMZ warning; hidden when there is nothing. */
     private View buildNoticeRow() {
         noticeRow = new LinearLayout(this);
         noticeRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -398,7 +398,7 @@ public class HomeActivity extends Activity {
         monthName.setText(MONTHS[now.get(java.util.Calendar.MONTH)] + " " + now.get(java.util.Calendar.YEAR));
 
         java.util.Calendar day = monthStart();
-        int offset = (day.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7; // tjedan počinje ponedjeljkom
+        int offset = (day.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7; // week starts on Monday
         int last = day.getActualMaximum(java.util.Calendar.DAY_OF_MONTH);
         long todayStart = 0;
         for (int i = 0; i < monthCells.length; i++) {
@@ -442,7 +442,7 @@ public class HomeActivity extends Activity {
     }
 
     private void showTodo(List<Todo.Item> todos) {
-        // Ako je fokus na zadatku, zadrži ga na istom (ili susjednom) i nakon osvježavanja.
+        // If a task has focus, keep it on the same (or neighboring) task after the refresh.
         View focused = todoList.findFocus();
         int focusIndex = focused == null ? -1 : todoList.indexOfChild(focused) - 1;
         todoList.removeViews(1, todoList.getChildCount() - 1);
@@ -506,7 +506,7 @@ public class HomeActivity extends Activity {
         refreshAgenda();
     }
 
-    /** Redak ispod gumba: lijevo vrijeme (danas i 3 dana), desno današnji datum i mjesec. */
+    /** Row below the buttons: weather on the left (today and 3 days), today's date and the month on the right. */
     private View buildInfoRow() {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -522,8 +522,8 @@ public class HomeActivity extends Activity {
     }
 
     /**
-     * Ploča cijelom širinom ispod vremena i mjeseca, samo uz osobni kalendar ili Todoist:
-     * lijevo "Događaji", desno "Todo".
+     * Full-width panel below the weather and month, only with a personal calendar or Todoist:
+     * "Događaji" (events) on the left, "Todo" on the right.
      */
     private View buildAgendaPanel() {
         LinearLayout panel = new LinearLayout(this);
@@ -556,8 +556,8 @@ public class HomeActivity extends Activity {
         dlp.rightMargin = dp(14);
         panel.addView(divider, dlp);
 
-        // Todo: zadaci se biraju daljinskim (gore iz aplikacija), OK ih označi odrađenima.
-        // Više zadataka nego što stane: popis se pomiče za fokusom.
+        // Todo: tasks are selected with the remote (up from the apps), OK marks them done.
+        // More tasks than fit: the list scrolls with the focus.
         LinearLayout todo = column("Todo");
         todoScroll = new android.widget.ScrollView(this);
         todoScroll.setVerticalScrollBarEnabled(false);
@@ -586,7 +586,7 @@ public class HomeActivity extends Activity {
         return panel;
     }
 
-    /** Ploča kao Appleov widget kalendara: lijevo veliki današnji dan, desno cijeli mjesec. */
+    /** Panel like Apple's calendar widget: today's day large on the left, the whole month on the right. */
     private View buildMonthPanel() {
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.HORIZONTAL);
@@ -669,7 +669,7 @@ public class HomeActivity extends Activity {
         return lp;
     }
 
-    /** Staklena ploča: lijevo trenutno vrijeme i danas, desno sljedeća tri dana. */
+    /** Glass panel: current weather and today on the left, the next three days on the right. */
     private View buildWeatherPanel() {
         weatherPanel = new LinearLayout(this);
         weatherPanel.setOrientation(LinearLayout.HORIZONTAL);
@@ -678,7 +678,7 @@ public class HomeActivity extends Activity {
         weatherPanel.setPadding(dp(20), dp(12), dp(8), dp(12));
         weatherPanel.setVisibility(View.GONE);
 
-        // Lijevo: znak i temperatura, ispod mjesto, opis i današnji raspon.
+        // Left: symbol and temperature, below them the place, description and today's range.
         LinearLayout now = new LinearLayout(this);
         now.setOrientation(LinearLayout.VERTICAL);
         LinearLayout big = new LinearLayout(this);
@@ -743,7 +743,7 @@ public class HomeActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        // Početni ekran nema kamo "natrag".
+        // The home screen has nowhere to go "back" to.
     }
 
     @Override
@@ -836,15 +836,15 @@ public class HomeActivity extends Activity {
         grid = new GridView(this);
         grid.setNumColumns(COLUMNS);
         grid.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
-        // Razmak između stupaca je unutar ćelije (vidi getView), pa kartica u fokusu ima mjesta
-        // da izraste. Ništa je ne smije rezati: ni mreža ni ćelija.
+        // The gap between columns is inside the cell (see getView), so the focused card has room
+        // to grow. Nothing may clip it: neither the grid nor the cell.
         grid.setHorizontalSpacing(0);
         grid.setVerticalSpacing(dp(10));
         grid.setPadding(0, dp(16), 0, dp(12));
         grid.setClipToPadding(false);
         grid.setClipChildren(false);
-        // Umjesto okvira oko odabrane ćelije kartica se podigne (highlight); tako ne ostane
-        // nacrtan okvir kad fokus ode na gumbe gore.
+        // Instead of a frame around the selected cell, the card lifts (highlight); that way no
+        // frame stays drawn when focus moves to the buttons at the top.
         grid.setSelector(new ColorDrawable(Color.TRANSPARENT));
         grid.setVerticalScrollBarEnabled(false);
         grid.setCacheColorHint(Color.TRANSPARENT);
@@ -905,7 +905,7 @@ public class HomeActivity extends Activity {
         return b;
     }
 
-    /** Kartica u fokusu se podigne i poveća, dobije sjenu i odsjaj, a ispod nje se pokaže naziv. */
+    /** The focused card lifts and grows, gets a shadow and a sheen, and its name shows below it. */
     private void highlight(boolean animate) {
         int selected = grid.hasFocus() ? grid.getSelectedItemPosition() : AdapterView.INVALID_POSITION;
         int first = grid.getFirstVisiblePosition();
@@ -920,10 +920,10 @@ public class HomeActivity extends Activity {
 
     private void applyFocus(Holder h, App app, boolean focused, boolean animate) {
         float scale = focused ? LIFT : 1f;
-        // Natpis je već na banneru, pa se ispod pokazuje samo u fokusu; ikonama treba uvijek.
+        // The banner already shows the name, so the label below appears only on focus; icons always need it.
         float labelAlpha = focused ? 1f : (app.isBanner ? 0f : 0.7f);
-        h.cell.setTranslationZ(focused ? 1 : 0); // crta se iznad susjeda
-        h.card.setTranslationZ(focused ? dp(12) : 0); // sjena
+        h.cell.setTranslationZ(focused ? 1 : 0); // drawn above neighbors
+        h.card.setTranslationZ(focused ? dp(12) : 0); // shadow
         h.sheen.setAlpha(focused ? 255 : 0);
         if (animate) {
             h.card.animate().scaleX(scale).scaleY(scale).setDuration(LIFT_MS).setInterpolator(EASE).start();
@@ -945,7 +945,7 @@ public class HomeActivity extends Activity {
         Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
     }
 
-    // ---------------------------------------------------------------- Aplikacije
+    // ---------------------------------------------------------------- Apps
 
     private void reload() {
         dirty = false;
@@ -1129,7 +1129,7 @@ public class HomeActivity extends Activity {
                 cell.setClipToPadding(false);
                 cell.setPadding(dp(GAP_DP / 2f), dp(8), dp(GAP_DP / 2f), dp(4));
 
-                // Kartica je staklena ploha zaobljenih rubova; banner se reže po istom obrisu.
+                // The card is a glass surface with rounded edges; the banner is cut to the same outline.
                 final int radius = dp(RADIUS_DP);
                 FrameLayout glass = new FrameLayout(HomeActivity.this);
                 glass.setBackground(Glass.pane(radius, 26, 40, 1));
@@ -1139,7 +1139,7 @@ public class HomeActivity extends Activity {
                 ImageView img = new ImageView(HomeActivity.this);
                 glass.addView(img, new FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                // Omotač se podiže i baca sjenu; obris mu treba samo za oblik sjene.
+                // The wrapper lifts and casts the shadow; its outline is only needed for the shadow shape.
                 FrameLayout card = new FrameLayout(HomeActivity.this);
                 card.setOutlineProvider(new android.view.ViewOutlineProvider() {
                     @Override

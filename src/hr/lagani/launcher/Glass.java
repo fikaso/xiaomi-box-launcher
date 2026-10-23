@@ -15,9 +15,9 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 
 /**
- * "Staklo" u stilu Apple TV-a bez zamućivanja u stvarnom vremenu (box je preslab za to):
- * pozadina se nacrta samo jednom, kao mekane mrlje boje koje izgledaju kao zamućena fotografija,
- * a kartice i gumbi su poluprozirne plohe s tankim svijetlim rubom.
+ * Apple TV style "glass" without real-time blur (the box is too weak for that):
+ * the background is painted only once, as soft color blobs that look like a blurred photo,
+ * and cards and buttons are translucent surfaces with a thin light edge.
  */
 final class Glass {
 
@@ -30,7 +30,7 @@ final class Glass {
     private Glass() {
     }
 
-    /** Pozadina se crta u maloj rezoluciji, a raširi je bilinearno skaliranje: tako ostane mekana. */
+    /** The background is painted at low resolution and stretched by bilinear scaling, so it stays soft. */
     static Drawable background(Context context) {
         if (background == null) background = paintBackground(384, 216);
         BitmapDrawable d = new BitmapDrawable(context.getResources(), background);
@@ -42,11 +42,11 @@ final class Glass {
         Bitmap b = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(b);
         c.drawColor(Color.rgb(8, 10, 18));
-        blob(c, w * 0.12f, h * 0.05f, w * 0.55f, Color.argb(210, 36, 72, 168));  // plava
-        blob(c, w * 0.88f, h * 0.15f, w * 0.50f, Color.argb(170, 112, 52, 156)); // ljubičasta
-        blob(c, w * 0.68f, h * 1.00f, w * 0.62f, Color.argb(150, 18, 118, 140)); // tirkizna
-        blob(c, w * 0.05f, h * 0.95f, w * 0.40f, Color.argb(110, 168, 84, 62));  // topla
-        // Prema dnu tamnije, da se natpisi čitaju.
+        blob(c, w * 0.12f, h * 0.05f, w * 0.55f, Color.argb(210, 36, 72, 168));  // blue
+        blob(c, w * 0.88f, h * 0.15f, w * 0.50f, Color.argb(170, 112, 52, 156)); // purple
+        blob(c, w * 0.68f, h * 1.00f, w * 0.62f, Color.argb(150, 18, 118, 140)); // turquoise
+        blob(c, w * 0.05f, h * 0.95f, w * 0.40f, Color.argb(110, 168, 84, 62));  // warm
+        // Darker toward the bottom, so labels stay readable.
         Paint shade = new Paint();
         shade.setShader(new LinearGradient(0, 0, 0, h,
                 Color.argb(30, 0, 0, 0), Color.argb(150, 0, 0, 0), Shader.TileMode.CLAMP));
@@ -61,15 +61,15 @@ final class Glass {
     }
 
     /**
-     * Banner zaobljenih kutova, nacrtan jednom u sliku. Rezanje po obrisu (clipToOutline) box
-     * kod povećane kartice reže na staru veličinu, pa kutove radimo ovdje.
+     * Banner with rounded corners, drawn once into a bitmap. On the box, outline clipping (clipToOutline)
+     * of an enlarged card clips to the old size, so the corners are done here.
      */
     static Drawable roundedBanner(Context context, Drawable art, int w, int h, float radius) {
         Bitmap src = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(src);
         int iw = art.getIntrinsicWidth(), ih = art.getIntrinsicHeight();
         if (iw > 0 && ih > 0) {
-            // Kao CENTER_CROP: popuni karticu, višak odreži jednako s obje strane.
+            // Like CENTER_CROP: fill the card, crop the excess equally on both sides.
             float scale = Math.max(w / (float) iw, h / (float) ih);
             int dw = Math.round(iw * scale), dh = Math.round(ih * scale);
             art.setBounds((w - dw) / 2, (h - dh) / 2, (w + dw) / 2, (h + dh) / 2);
@@ -86,7 +86,7 @@ final class Glass {
         return new BitmapDrawable(context.getResources(), out);
     }
 
-    /** Poluprozirna ploha s tankim rubom. */
+    /** Translucent surface with a thin edge. */
     static GradientDrawable pane(float radius, int fillAlpha, int edgeAlpha, int edgePx) {
         GradientDrawable d = new GradientDrawable();
         d.setColor(Color.argb(fillAlpha, 255, 255, 255));
@@ -95,7 +95,7 @@ final class Glass {
         return d;
     }
 
-    /** Odsjaj preko fokusirane kartice: svjetlo odozgo koje se gubi prema sredini. */
+    /** Sheen over the focused card: light from above that fades toward the middle. */
     static GradientDrawable sheen(float radius, int edgePx) {
         GradientDrawable d = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{
                 Color.argb(80, 255, 255, 255), Color.argb(14, 255, 255, 255), Color.argb(0, 255, 255, 255)});
@@ -104,7 +104,7 @@ final class Glass {
         return d;
     }
 
-    /** Gumb kao staklena "pilula"; kad je u fokusu, postane bijel s tamnim tekstom, kao na Apple TV-u. */
+    /** Button as a glass "pill"; when focused it turns white with dark text, as on Apple TV. */
     static Drawable pill(float radius, int edgePx) {
         StateListDrawable d = new StateListDrawable();
         GradientDrawable on = new GradientDrawable();
@@ -115,7 +115,7 @@ final class Glass {
         return d;
     }
 
-    /** Boja temperature kao u Apple Weatheru: plavo hladno, zeleno-žuto ugodno, narančasto-crveno vruće. */
+    /** Temperature color as in Apple Weather: blue for cold, green-yellow for mild, orange-red for hot. */
     static int tempColor(int t) {
         int[][] stops = {{-5, 0xFF5AC8FA}, {5, 0xFF64D2C8}, {15, 0xFFB4DC50}, {22, 0xFFFFCC00}, {30, 0xFFFF9500}, {38, 0xFFFF3B30}};
         if (t <= stops[0][0]) return stops[0][1];
@@ -136,9 +136,9 @@ final class Glass {
     }
 
     /**
-     * "5° ━━ 16°" kao u Apple Weatheru: najniža prigušeno lijevo, najviša bijelo i istaknuto desno.
-     * Traka je siva podloga za raspon svih prikazanih dana ({@code scaleMin}–{@code scaleMax}), a
-     * obojeni dio pokazuje gdje je taj dan, pa se toplji i hladniji dani vide na prvi pogled.
+     * "5° ━━ 16°" as in Apple Weather: the low dimmed on the left, the high white and emphasized on the right.
+     * The bar is a gray track for the range of all shown days ({@code scaleMin}–{@code scaleMax}), and
+     * the colored part shows where that day falls, so warmer and colder days stand out at a glance.
      */
     static CharSequence range(Context context, int low, int high, int scaleMin, int scaleMax,
                               int barWidthPx, int barHeightPx) {
@@ -156,7 +156,7 @@ final class Glass {
                              int top, int y, int bottom, Paint paint) {
                 Drawable d = getDrawable();
                 canvas.save();
-                // Okomito na sredinu visine malih slova, a ne na osnovnu liniju.
+                // Vertically centered on the x-height, not on the baseline.
                 canvas.translate(x, y - paint.getTextSize() * 0.36f - d.getBounds().height() / 2f);
                 d.draw(canvas);
                 canvas.restore();
@@ -170,7 +170,7 @@ final class Glass {
         return s;
     }
 
-    /** Siva podloga cijelom širinom i na njoj obojeni dio od niske do visoke temperature dana. */
+    /** Full-width gray track with a colored part on it from the day's low to its high temperature. */
     private static final class RangeBar extends Drawable {
         private final Paint track = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -193,7 +193,7 @@ final class Glass {
             float span = Math.max(1, max - min);
             float from = b.left + b.width() * (low - min) / span;
             float to = b.left + b.width() * (high - min) / span;
-            if (to - from < b.height()) to = Math.min(b.right, from + b.height()); // barem točka
+            if (to - from < b.height()) to = Math.min(b.right, from + b.height()); // at least a dot
             fill.setShader(new LinearGradient(from, 0, to, 0, tempColor(low), tempColor(high), Shader.TileMode.CLAMP));
             canvas.drawRoundRect(from, b.top, to, b.bottom, radius, radius, fill);
         }
@@ -203,7 +203,7 @@ final class Glass {
         @Override public int getOpacity() { return android.graphics.PixelFormat.TRANSLUCENT; }
     }
 
-    /** Kao pill, ali bez plohe kad nije u fokusu (za retke popisa). */
+    /** Like pill, but with no surface when not focused (for list rows). */
     static Drawable focusPill(float radius) {
         StateListDrawable d = new StateListDrawable();
         GradientDrawable on = new GradientDrawable();

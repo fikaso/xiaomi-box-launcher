@@ -15,10 +15,10 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * DHMZ upozorenja za županiju mjesta iz postavki (vidi {@link Place}) iz službenih CAP datoteka
- * za danas i sutra. Svako upozorenje je u datoteci dvaput (hr i en), uzima se hrvatsko.
- * Isteklo ostaje u datoteci, a zeleno ("Nema upozorenja!") se preskače.
- * Županija se traži po nazivu (areaDesc), jer se kodovi (EMMA_ID, NUTS3) ponavljaju među županijama.
+ * DHMZ warnings for the county of the location from settings (see {@link Place}) from the official CAP files
+ * for today and tomorrow. Each warning appears twice in the file (hr and en); the Croatian one is used.
+ * Expired ones stay in the file, and green ones ("Nema upozorenja!", no warnings) are skipped.
+ * The county is matched by name (areaDesc), because the codes (EMMA_ID, NUTS3) repeat across counties.
  */
 final class Dhmz {
 
@@ -28,7 +28,7 @@ final class Dhmz {
     };
 
     static final class Warning {
-        final int level;          // 2 žuto, 3 narančasto, 4 crveno
+        final int level;          // 2 yellow, 3 orange, 4 red
         final String event;       // "Žuto upozorenje za vjetar"
         final long onset;
         final long expires;
@@ -44,7 +44,7 @@ final class Dhmz {
     private Dhmz() {
     }
 
-    /** Važeća i nadolazeća upozorenja: prvo ona koja traju, pa najviša razina, pa najranija. */
+    /** Active and upcoming warnings: ongoing ones first, then highest level, then earliest. */
     static List<Warning> current(Context context) {
         long now = System.currentTimeMillis();
         List<Warning> result = new ArrayList<>();
@@ -56,7 +56,7 @@ final class Dhmz {
             try {
                 parse(xml, place.county, now, result);
             } catch (Exception ignored) {
-                // Neispravna datoteka: preskoči je.
+                // Invalid file: skip it.
             }
         }
         final long t = now;
@@ -111,7 +111,7 @@ final class Dhmz {
         }
     }
 
-    /** "2026-10-23 06:54:53+02:00" ili s "T"; neispravno ili prazno je 0. */
+    /** "2026-10-23 06:54:53+02:00" or with "T"; invalid or empty gives 0. */
     private static long time(String s) {
         if (s == null || s.isEmpty()) return 0;
         try {
@@ -121,7 +121,7 @@ final class Dhmz {
         }
     }
 
-    /** "do 20 h", "danas od 14 h", "sutra 8–20 h" (sati bez minuta, kao u prognozi). */
+    /** "do 20 h", "danas od 14 h", "sutra 8–20 h" (hours without minutes, as in the forecast). */
     static String when(Warning w) {
         long now = System.currentTimeMillis();
         if (w.onset <= now) return "do " + dayPrefix(w.expires) + hour(w.expires);

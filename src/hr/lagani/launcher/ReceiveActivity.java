@@ -36,8 +36,8 @@ import java.util.Enumeration;
 import java.util.List;
 
 /**
- * Ekran "Primi datoteke": dok je otvoren, na laptopu ili mobitelu u pregledniku
- * otvoriš prikazanu adresu i pošalješ datoteke. APK se instalira klikom na njega.
+ * The "Primi datoteke" (receive files) screen: while it is open, you open the shown address
+ * in a browser on a laptop or phone and send files. An APK is installed by clicking it.
  */
 public class ReceiveActivity extends Activity {
 
@@ -50,15 +50,15 @@ public class ReceiveActivity extends Activity {
     private ArrayAdapter<String> adapter;
     private final List<File> files = new ArrayList<>();
 
-    /** Download/TV Box ako smijemo pisati u Download, inače mapa aplikacije (ne treba dozvola). */
+    /** Download/TV Box if we may write to Download, otherwise the app's folder (no permission needed). */
     static File receiveDir(Context context) {
         boolean canWritePublic = Build.VERSION.SDK_INT < 23
                 || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
         if (canWritePublic) {
             return new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "TV Box");
         }
-        File dir = context.getExternalFilesDir("Primljeno");
-        return dir != null ? dir : new File(context.getFilesDir(), "Primljeno");
+        File dir = context.getExternalFilesDir("Received");
+        return dir != null ? dir : new File(context.getFilesDir(), "Received");
     }
 
     @Override
@@ -73,7 +73,7 @@ public class ReceiveActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
-        // Mapa za spremanje ovisi o dozvoli, pa server pokreni iznova.
+        // The save folder depends on the permission, so restart the server.
         stopServer();
         startServer();
     }
@@ -231,7 +231,7 @@ public class ReceiveActivity extends Activity {
         return d;
     }
 
-    // ---------------------------------------------------------------- Datoteke
+    // ---------------------------------------------------------------- Files
 
     private void refreshFiles() {
         files.clear();

@@ -21,22 +21,22 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * Sljedeća utakmica kluba s FotMoba (neslužbeni, ali javni JSON): protivnik, natjecanje i
- * vrijeme iz podataka o momčadi, a hrvatski TV kanal iz njihovog TV rasporeda (samo ~10 dana
- * unaprijed, pa kanal zna doći naknadno). Sofascore odbija zahtjeve koji nisu iz preglednika.
+ * The club's next match from FotMob (unofficial but public JSON): opponent, competition and
+ * time from the team data, and the Croatian TV channel from their TV listings (only ~10 days
+ * ahead, so the channel may show up later). Sofascore rejects requests that don't come from a browser.
  *
- * Klub se bira retkom "klub: Rijeka" u postavke.txt (ime se potraži na FotMobu, a može i
- * FotMob id); bez retka je Hajduk, a "klub: nijedan" skriva pločicu.
+ * The club is chosen with a line "club: HNK Rijeka" in settings.txt (the name is looked up on FotMob,
+ * a FotMob id also works); without the line it is HNK Hajduk Split, and "club: none" hides the tile.
  */
-final class Klub {
+final class Club {
 
-    private static final String DEFAULT_NAME = "Hajduk";
+    private static final String DEFAULT_NAME = "HNK Hajduk Split";
     private static final String DEFAULT_ID = "10154";
     private static final String TEAM = "https://www.fotmob.com/api/data/teams?ccode3=HRV&id=";
     private static final String TV = "https://www.fotmob.com/api/data/tvlistings?countryCode=HR";
     private static final String SEARCH = "https://www.fotmob.com/api/data/search/suggest?lang=en&term=";
     private static final long REFRESH_MS = 3 * 60 * 60 * 1000L;
-    /** Utakmica se pokazuje još dva sata nakon početka. */
+    /** The match is still shown for two hours after kickoff. */
     private static final long SHOW_AFTER_KICKOFF_MS = 2 * 60 * 60 * 1000L;
     private static final String[] DAYS = {"ned", "pon", "uto", "sri", "čet", "pet", "sub"};
 
@@ -53,16 +53,16 @@ final class Klub {
         }
     }
 
-    private Klub() {
+    private Club() {
     }
 
-    /** Zadnja poznata utakmica; dohvaća novu svaka 3 sata ili kad je stara prošla. Izvan glavne niti. */
+    /** Last known match; fetches a new one every 3 hours or once the old one is over. Off the main thread. */
     static Match next(Context context) {
-        String wanted = Postavke.get(context, "klub");
+        String wanted = UserConfig.get(context, "club");
         if (wanted == null) wanted = DEFAULT_NAME;
-        if (wanted.equalsIgnoreCase("nijedan") || wanted.equals("-")) return null;
+        if (wanted.equalsIgnoreCase("none") || wanted.equals("-")) return null;
 
-        File cache = new File(context.getFilesDir(), "klub.json");
+        File cache = new File(context.getFilesDir(), "club.json");
         Match m = read(cache, wanted);
         long now = System.currentTimeMillis();
         boolean stale = m == null || now - cache.lastModified() > REFRESH_MS || now > m.kickoff + SHOW_AFTER_KICKOFF_MS;
@@ -73,18 +73,18 @@ final class Klub {
                 write(cache, fresh.toString());
                 m = parse(fresh);
             } catch (Exception ignored) {
-                // Nema mreže ili se FotMob promijenio: ostaje zadnja poznata.
+                // No network or FotMob changed: keep the last known one.
             }
         }
         if (m == null || now > m.kickoff + SHOW_AFTER_KICKOFF_MS) return null;
         return m;
     }
 
-    /** FotMob id kluba: broj iz postavki, Hajduk ili prvi klub iz pretrage (zapamti se). */
+    /** The club's FotMob id: a number from settings, Hajduk, or the first club from search (stored). */
     private static String teamId(Context context, String wanted) throws Exception {
         if (wanted.matches("\\d+")) return wanted;
         if (wanted.equalsIgnoreCase(DEFAULT_NAME)) return DEFAULT_ID;
-        SharedPreferences sp = context.getSharedPreferences("klub", Context.MODE_PRIVATE);
+        SharedPreferences sp = context.getSharedPreferences("club", Context.MODE_PRIVATE);
         if (wanted.equalsIgnoreCase(sp.getString("query", ""))) return sp.getString("id", "");
         JSONArray groups = new JSONArray(get(SEARCH + URLEncoder.encode(wanted, "UTF-8")));
         for (int g = 0; g < groups.length(); g++) {
@@ -96,14 +96,14 @@ final class Klub {
                 return s.getString("id");
             }
         }
-        throw new IOException("Nema kluba " + wanted);
+        throw new IOException("No club " + wanted);
     }
 
     private static JSONObject fetchMatch(String teamId, String ourName) throws Exception {
         JSONObject next = new JSONObject(get(TEAM + teamId)).getJSONObject("overview").getJSONObject("nextMatch");
         JSONObject home = next.getJSONObject("home"), away = next.getJSONObject("away");
         JSONObject out = new JSONObject();
-        // Naš klub piše se kako ga je korisnik upisao ("Hajduk"), protivnik skraćeno.
+        // Our club is written as the user entered it ("Hajduk"), the opponent shortened.
         out.put("home", teamId.equals(home.optString("id")) ? ourName : shortName(home.getString("name")));
         out.put("away", teamId.equals(away.optString("id")) ? ourName : shortName(away.getString("name")));
         out.put("competition", next.optJSONObject("tournament") == null ? ""
@@ -114,7 +114,7 @@ final class Klub {
         return out;
     }
 
-    /** TV kanali (bez "To Go" aplikacija), bez ponavljanja, odvojeni zarezom; "" ako ih još nema. */
+    /** TV channels (without "To Go" apps), without duplicates, comma-separated; "" if none yet. */
     private static String channels(String matchId) {
         try {
             JSONArray list = new JSONObject(get(TV)).optJSONArray(matchId);
@@ -146,7 +146,7 @@ final class Klub {
         return name.replaceFirst("^(H?NK|FK|GNK) ", "");
     }
 
-    /** "sub 26. 10. u 18:00" ili "danas u 18:00". */
+    /** "sub 26. 10. u 18:00" or "danas u 18:00". */
     static String when(Match m) {
         Calendar c = Calendar.getInstance();
         c.setTimeInMillis(m.kickoff);
@@ -162,7 +162,7 @@ final class Klub {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(10000);
         c.setReadTimeout(20000);
-        // Bez User-Agenta CloudFront vraća 403.
+        // Without a User-Agent, CloudFront returns 403.
         c.setRequestProperty("User-Agent", "LaganiLauncher (Android TV)");
         try {
             if (c.getResponseCode() != 200) throw new IOException("HTTP " + c.getResponseCode());
@@ -176,7 +176,7 @@ final class Klub {
         }
     }
 
-    /** Zapamćena utakmica, ali samo ako je za klub koji je sad u postavkama. */
+    /** Stored match, but only if it is for the club currently in settings. */
     private static Match read(File f, String wanted) {
         if (!f.isFile()) return null;
         try {

@@ -20,31 +20,31 @@ import java.util.Set;
 import java.util.TimeZone;
 
 /**
- * Sljedeći događaji iz dva izvora:
- * 1. iCal adrese: ugrađeni javni kalendar hrvatskih praznika i adrese iz {@code kalendari.txt}
- *    (jedna po retku, npr. "tajna adresa u iCal formatu" zajedničkog Google kalendara);
- *    datoteka se šalje preko "Primi datoteke" i ostaje u mapi za primanje;
- * 2. kalendari koje Android sinkronizira s Google računom (na Android TV-u to često
- *    više ne radi, ali ako radi, i oni se prikazuju).
+ * Upcoming events from two sources:
+ * 1. iCal URLs: the built-in public calendar of Croatian holidays and URLs from {@code calendars.txt}
+ *    (one per line, e.g. the "secret address in iCal format" of a shared Google calendar);
+ *    the file is sent via "Primi datoteke" (receive files) and stays in the receive folder;
+ * 2. calendars Android syncs with the Google account (on Android TV this often
+ *    no longer works, but if it does, they are shown too).
  */
 final class Agenda {
 
-    /** Koliko dana unaprijed gledamo; ploča ionako pokaže samo prva 4 događaja. */
+    /** How many days ahead we look; the tile only shows the first 4 events anyway. */
     static final int DAYS = 30;
-    static final String CONFIG = "kalendari.txt";
+    static final String CONFIG = "calendars.txt";
     private static final String HOLIDAYS =
             "https://calendar.google.com/calendar/ical/hr.croatian%23holiday%40group.v.calendar.google.com/public/basic.ics";
     private static final long ICS_REFRESH_MS = 30 * 60 * 1000L;
-    /** Todo tablica je mala i mijenja se češće, pa se dohvaća svakih 5 min. */
+    /** The todo sheet is small and changes more often, so it is fetched every 5 min. */
     private static final long SHEET_REFRESH_MS = 5 * 60 * 1000L;
     private static final String[] DAY_NAMES = {"Ned", "Pon", "Uto", "Sri", "Čet", "Pet", "Sub"};
     private static final long DAY_MS = 24 * 60 * 60 * 1000L;
 
     static final class Item {
-        final long day;      // ponoć lokalnog dana kad se događaj prikazuje
+        final long day;      // local midnight of the day the event is shown on
         final boolean allDay;
         final long begin;
-        final String time;   // "18:00" ili "" za cjelodnevne
+        final String time;   // "18:00" or "" for all-day events
         final String title;
 
         Item(long day, boolean allDay, long begin, String time, String title) {
@@ -64,7 +64,7 @@ final class Agenda {
                 || context.checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED;
     }
 
-    /** Do {@code max} događaja od danas nadalje. Zove se izvan glavne niti (dohvaća iCal). */
+    /** Up to {@code max} events from today onward. Called off the main thread (fetches iCal). */
     static List<Item> upcoming(Context context, int max) {
         long now = System.currentTimeMillis();
         long today = startOfDay(now);
@@ -76,7 +76,7 @@ final class Agenda {
             String ics = cachedIcs(context, url);
             if (ics == null) continue;
             List<Ics.Event> events = Ics.between(ics, today, until);
-            // Po vremenu, da od ponavljajućih ostane najbliži termin.
+            // By time, so the nearest occurrence of a recurring event is the one kept.
             Collections.sort(events, new Comparator<Ics.Event>() {
                 @Override
                 public int compare(Ics.Event a, Ics.Event b) { return Long.compare(a.start, b.start); }
@@ -92,7 +92,7 @@ final class Agenda {
                 long day = Math.max(startDay, today);
                 if (day >= until) continue;
                 if (e.freq != null) {
-                    // Tjedne i dnevne (npr. smeće) samo danas i sutra; svaki ponavljajući samo jednom.
+                    // Weekly and daily ones (e.g. trash) only today and tomorrow; each recurring one only once.
                     boolean frequent = "WEEKLY".equals(e.freq) || "DAILY".equals(e.freq);
                     if (frequent && day > today + DAY_MS) continue;
                     if (!repeating.add(e.title.trim().toLowerCase(Locale.ROOT))) continue;
@@ -115,11 +115,11 @@ final class Agenda {
     }
 
     private static void addUnique(List<Item> items, Set<String> seen, Item it) {
-        // Isti blagdan zna doći iz više kalendara.
+        // The same holiday can come from several calendars.
         if (seen.add(it.day + "|" + it.title.toLowerCase(Locale.ROOT))) items.add(it);
     }
 
-    /** Sve adrese iz kalendari.txt redom (prazni reci i # komentari se preskaču). */
+    /** All URLs from calendars.txt in order (blank lines and # comments are skipped). */
     static List<String> lines(Context context) {
         List<String> urls = new ArrayList<>();
         java.io.File f = new java.io.File(ReceiveActivity.receiveDir(context), CONFIG);
@@ -140,18 +140,18 @@ final class Agenda {
         return urls;
     }
 
-    /** Ima li u kalendari.txt ičeg osobnog (kalendar, tablica ili Todoist); bez toga ploča pokazuje mjesec. */
+    /** Whether calendars.txt has anything personal (calendar, sheet or Todoist); without it the tile shows the month. */
     static boolean personal(Context context) {
         return !lines(context).isEmpty() || Todo.configured(context);
     }
 
-    /** Državni praznici u [from, to): lokalna ponoć dana → naziv. Zove se izvan glavne niti. */
+    /** Public holidays in [from, to): local midnight of the day → name. Called off the main thread. */
     static java.util.TreeMap<Long, String> holidays(Context context, long from, long to) {
         java.util.TreeMap<Long, String> days = new java.util.TreeMap<>();
         String ics = cachedIcs(context, HOLIDAYS);
         if (ics == null) return days;
-        // Googleov kalendar ima i spomendane (Majčin dan, pravoslavni Uskrs...); neradni su samo
-        // događaji s opisom "Državni praznik".
+        // Google's calendar also has observances (Mother's Day, Orthodox Easter...); only events
+        // described as "Državni praznik" (public holiday) are days off.
         StringBuilder only = new StringBuilder();
         for (String block : ics.replace("\r\n", "\n").split("BEGIN:VEVENT")) {
             if (block.contains("\nDESCRIPTION:Državni praznik")) only.append("BEGIN:VEVENT").append(block);
@@ -170,7 +170,7 @@ final class Agenda {
         return url.contains("script.google.com/");
     }
 
-    /** Ugrađeni praznici + kalendari iz kalendari.txt (tablice i skripte se preskaču). */
+    /** Built-in holidays + calendars from calendars.txt (sheets and scripts are skipped). */
     private static List<String> icsUrls(Context context) {
         List<String> urls = new ArrayList<>();
         urls.add(HOLIDAYS);
@@ -184,7 +184,7 @@ final class Agenda {
         return cachedText(context, url);
     }
 
-    /** Tekst s adrese s kopijom u memoriji boxa; dohvaća ponovno svakih 30 min, a bez mreže koristi staru. */
+    /** Text from a URL, with a copy stored on the box; refetched every 30 min, the old copy is used when offline. */
     static String cachedText(Context context, String url) {
         java.io.File f = new java.io.File(context.getFilesDir(), "ics_" + Integer.toHexString(url.hashCode()) + ".txt");
         if (!f.isFile() || System.currentTimeMillis() - f.lastModified() > (isSheet(url) ? SHEET_REFRESH_MS : ICS_REFRESH_MS)) {
@@ -198,7 +198,7 @@ final class Agenda {
                 }
                 return fresh;
             } catch (java.io.IOException ignored) {
-                // Nema mreže: pokušaj sa starom kopijom.
+                // No network: try the old copy.
             }
         }
         if (!f.isFile()) return null;
@@ -224,7 +224,7 @@ final class Agenda {
     private static void addSynced(Context context, long now, long today, long until,
                                   List<Item> items, Set<String> seen) {
         Uri.Builder uri = CalendarContract.Instances.CONTENT_URI.buildUpon();
-        // Dan ranije jer cjelodnevni događaji počinju u ponoć po UTC-u.
+        // One day earlier because all-day events start at UTC midnight.
         ContentUris.appendId(uri, today - DAY_MS);
         ContentUris.appendId(uri, until);
         String[] projection = {
@@ -249,9 +249,9 @@ final class Agenda {
 
                 long startDay, endDay;
                 if (allDay) {
-                    // Cjelodnevni su zapisani kao ponoć po UTC-u; prebaci na lokalni datum.
+                    // All-day events are stored as UTC midnight; convert to the local date.
                     startDay = utcDateToLocal(begin);
-                    endDay = utcDateToLocal(end);          // isključivo
+                    endDay = utcDateToLocal(end);          // exclusive
                     if (endDay <= today) continue;
                 } else {
                     if (end <= now) continue;
@@ -267,7 +267,7 @@ final class Agenda {
                         allDay ? "" : hhmm(begin), title.trim()));
             }
         } catch (RuntimeException ignored) {
-            // Kalendar nedostupan: prikaži što imamo.
+            // Calendar unavailable: show what we have.
         } finally {
             if (c != null) c.close();
         }

@@ -1,0 +1,9 @@
+# Example for settings.txt. Copy it to settings.txt, adjust it and send it to the box
+# ("Primi datoteke" screen, or adb push to "/sdcard/Download/TV Box/"). Lines starting with # are skipped.
+
+# Place for the forecast and DHMZ weather warnings (without this line: Zagreb).
+location: Osijek
+
+# Club for the "next match" tile (without this line: HNK Hajduk Split). Name or FotMob id;
+# "club: none" hides the tile.
+club: HNK Hajduk Split

@@ -30,14 +30,14 @@ final class Prefs {
     Set<String> hidden() { return new HashSet<>(sp.getStringSet("hidden", new HashSet<String>())); }
     void setHidden(Set<String> hidden) { sp.edit().putStringSet("hidden", hidden).apply(); }
 
-    /** Ove aplikacije uvijek idu prve, ovim redom. */
+    /** These apps always come first, in this order. */
     static final List<String> FAVOURITES = Arrays.asList(
             TIVIMATE,
             "com.stremio.one",                   // Stremio
-            "org.smarttube.stable",              // SmartTube (novi paket)
-            "org.smarttube.beta",                // SmartTube beta (novi paket)
-            "com.teamsmart.videomanager.tv",     // SmartTube (stari paket)
-            "com.liskovsoft.smarttubetv.beta",   // SmartTube beta (stari paket)
+            "org.smarttube.stable",              // SmartTube (new package)
+            "org.smarttube.beta",                // SmartTube beta (new package)
+            "com.teamsmart.videomanager.tv",     // SmartTube (old package)
+            "com.liskovsoft.smarttubetv.beta",   // SmartTube beta (old package)
             "com.google.android.youtube.tv");    // YouTube
 
     static int rank(String pkg) {

@@ -18,9 +18,9 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Todo iz Todoista: neodrađeni zadaci iz projekta "TV" (zajednički projekt obitelji).
- * U kalendari.txt redak "todoist: <API ključ>" (po želji iza ključa ime projekta, inače "TV").
- * Zadnji odgovor se pamti, pa bez mreže ostaje zadnje poznato stanje.
+ * Todo from Todoist: open tasks from the "TV" project (the family's shared project).
+ * In calendars.txt, a line "todoist: <token> [project]" (the project name after the token is optional, default "TV").
+ * The last response is stored, so the last known state stays when offline.
  */
 final class Todo {
 
@@ -36,13 +36,13 @@ final class Todo {
 
     private static final String API = "https://api.todoist.com/api/v1/";
     private static final long REFRESH_MS = 5 * 60 * 1000L;
-    /** Zadaci označeni na TV-u ostaju skriveni i ako se stari odgovor još koristi. */
+    /** Tasks checked off on the TV stay hidden even while the old response is still in use. */
     private static final long HIDE_MS = 60 * 60 * 1000L;
 
     private Todo() {
     }
 
-    /** {ključ, ime projekta} iz kalendari.txt, ili null ako Todoist nije postavljen. */
+    /** {token, project name} from calendars.txt, or null if Todoist is not set up. */
     private static String[] config(Context context) {
         File f = new File(ReceiveActivity.receiveDir(context), Agenda.CONFIG);
         if (!f.isFile()) return null;
@@ -74,7 +74,7 @@ final class Todo {
         return context.getSharedPreferences("todo", Context.MODE_PRIVATE);
     }
 
-    /** Zove se izvan glavne niti. */
+    /** Called off the main thread. */
     static List<Item> open(Context context, int max) {
         List<Item> items = new ArrayList<>();
         String[] cfg = config(context);
@@ -86,7 +86,7 @@ final class Todo {
                 json = fetchTasks(cfg[0], cfg[1]);
                 write(cache, json);
             } catch (IOException | JSONException ignored) {
-                // Nema mreže ili ključ ne valja: ostaje zadnje poznato.
+                // No network or invalid token: keep the last known state.
             }
         }
         if (json == null) json = read(cache);
@@ -95,7 +95,7 @@ final class Todo {
             JSONArray tasks = new JSONArray(json);
             List<JSONObject> list = new ArrayList<>();
             for (int i = 0; i < tasks.length(); i++) list.add(tasks.getJSONObject(i));
-            // Prvo oni s rokom (najraniji prvi), zatim redoslijed iz aplikacije.
+            // Tasks with a due date first (earliest first), then the order from the app.
             Collections.sort(list, new Comparator<JSONObject>() {
                 @Override
                 public int compare(JSONObject a, JSONObject b) {
@@ -124,7 +124,7 @@ final class Todo {
         return d == null ? "" : d.optString("date");
     }
 
-    /** Označi zadatak odrađenim u Todoistu. Zove se izvan glavne niti. */
+    /** Marks the task as done in Todoist. Called off the main thread. */
     static boolean markDone(Context context, Item item) {
         String[] cfg = config(context);
         if (cfg == null) return false;
@@ -153,7 +153,7 @@ final class Todo {
 
     // ---------------------------------------------------------------- API
 
-    /** Svi aktivni zadaci projekta, kao JSON polje. */
+    /** All active tasks of the project, as a JSON array. */
     private static String fetchTasks(String token, String projectName) throws IOException, JSONException {
         String projectId = null;
         for (JSONObject p : getAll(token, API + "projects")) {
@@ -162,13 +162,13 @@ final class Todo {
                 break;
             }
         }
-        if (projectId == null) throw new IOException("Nema projekta " + projectName);
+        if (projectId == null) throw new IOException("No project " + projectName);
         JSONArray out = new JSONArray();
         for (JSONObject t : getAll(token, API + "tasks?project_id=" + projectId)) out.put(t);
         return out.toString();
     }
 
-    /** GET s listanjem po stranicama ({"results": [...], "next_cursor": ...}). */
+    /** GET with pagination ({"results": [...], "next_cursor": ...}). */
     private static List<JSONObject> getAll(String token, String url) throws IOException, JSONException {
         List<JSONObject> all = new ArrayList<>();
         String cursor = null;
@@ -185,7 +185,7 @@ final class Todo {
             }
             JSONArray results;
             String trimmed = body.trim();
-            if (trimmed.startsWith("[")) {          // stariji oblik odgovora: samo polje
+            if (trimmed.startsWith("[")) {          // older response format: just an array
                 results = new JSONArray(trimmed);
                 cursor = null;
             } else {

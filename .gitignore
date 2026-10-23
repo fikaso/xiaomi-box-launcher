@@ -1,25 +1,24 @@
-# Tajne: adresa obiteljskog kalendara, Todoist ključ, pristup kameri, ključ za potpis
-kalendari.txt
-kamera-reolink.m3u
-*.m3u
-*.m3u8
-
-# IPTV liste i TiviMate backupi su korisnikovi (adrese i prijave za liste)
-*.tmb
+# Personal settings and secrets: secret calendar address, Todoist token, location, signing key
+settings.txt
+calendars.txt
 *.p12
 *.pass
 
-# Bilješke za Claude sesije: MAC/IP adrese uređaja, kućna mreža, kamera (ostaju samo lokalno)
-ZA_CLAUDE.md
+# Local notes for Claude sessions (device MAC/IP addresses, home network)
+*.local.md
 
-# Backupi boxova (TiviMate backup ima podatke IPTV liste) i snimke ekrana s osobnim događajima
+# IPTV playlists, camera streams and TiviMate backups belong to the user (URLs and logins)
+*.m3u
+*.m3u8
+*.tmb
+
+# Box backups and screenshots with personal events (docs/ holds the published screenshot)
 backup-*/
 *.png
 *.jpg
+!docs/*.jpg
+!docs/*.png
 
-# Izgrađeno
+# Build output
 build/
 *.apk
-
-# Mjesto za prognozu i upozorenja
-postavke.txt

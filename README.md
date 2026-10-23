@@ -1,70 +1,75 @@
 # Xiaomi Box Launcher (Lagani Launcher)
 
-Lagan početni ekran za Xiaomi Android TV boxove (Mi Box 4/S, Xiaomi TV Box S s Google TV-om),
-u "staklenom" stilu Apple TV-a. Umjesto Xiaomijevih i Googleovih preporuka i reklama pokazuje
-samo ono što treba:
+A light home screen for Xiaomi Android TV boxes (Mi Box 4/S, Xiaomi TV Box S with Google TV) in
+an Apple TV-like "glass" style. Instead of Xiaomi's and Google's recommendations and ads it shows
+only what you need:
 
-- **prognozu** za tvoje mjesto (danas i 3 dana, Open-Meteo),
-- **kalendar mjeseca** s današnjim danom i državnim praznicima,
-- **sljedeću utakmicu** tvog kluba s TV kanalom (FotMob; zadano Hajduk),
-- **DHMZ upozorenja** za tvoju županiju (vjetar, kiša, snijeg...), samo kad ih ima,
-- po želji **događaje** iz Google kalendara i **zadatke** iz Todoista,
-- mrežu aplikacija (TiviMate, Stremio, SmartTube, YouTube prvi), skrivanje aplikacija,
-  automatsko pokretanje TiviMatea nakon paljenja i **Primi datoteke** (slanje APK-ova, videa
-  i postavki na box iz preglednika na mobitelu ili laptopu).
+![Home screen](docs/screenshot.jpg)
 
-Uz launcher je i skripta koja s boxa makne preporuke, reklame i Xiaomijevu analitiku
-(`ciscenje/ocisti.sh`, vraća se s `ciscenje/vrati.sh`).
+- **weather** for your place (today and 3 days, Open-Meteo),
+- a **month calendar** with today and Croatian public holidays,
+- your club's **next match** with the TV channel (FotMob; default HNK Hajduk Split),
+- **DHMZ weather warnings** for your county (wind, rain, snow...), only while there are any,
+- optionally **events** from Google Calendar and **tasks** from Todoist,
+- an app grid (TiviMate, Stremio, SmartTube, YouTube first), hiding apps, starting TiviMate
+  automatically after power-on, and **Primi datoteke** (receive files: send APKs, videos and
+  settings to the box from a browser on your phone or laptop).
 
-## Postavljanje
+The on-screen labels are in Croatian (the launcher is made for Croatian viewers).
 
-### A) S Claude Codeom (preporučeno)
+There is also a script that removes recommendations, ads and Xiaomi analytics from the box
+(`cleanup/cleanup.sh`, undone by `cleanup/restore.sh`).
 
-Treba ti laptop (Windows, Mac ili Linux) na istoj mreži kao box i
-[Claude Code](https://claude.com/claude-code). Na boxu uključi USB debugging:
+## Setup
 
-1. Postavke → Sustav (ili Device Preferences) → O uređaju → 7 puta klikni na **Build**
-   (na Google TV-u: "Android TV OS build").
-2. Postavke → Sustav → Opcije za razvojne programere → uključi **USB debugging**.
-3. Zapiši IP adresu boxa: Postavke → Mreža i internet → tvoja mreža.
+### A) With Claude Code (recommended)
 
-Zatim kloniraj repozitorij, u njemu pokreni Claude Code i napiši, npr.:
+You need a laptop (Windows, Mac or Linux) on the same network as the box and
+[Claude Code](https://claude.com/claude-code). On the box, turn on USB debugging:
 
-> Postavi mi ovaj launcher na moj Xiaomi box, IP adresa je 192.168.1.50.
+1. Settings → System (or Device Preferences) → About → click **Build** 7 times
+   (on Google TV: "Android TV OS build").
+2. Settings → System → Developer options → turn on **USB debugging**.
+3. Note the box's IP address: Settings → Network & Internet → your network.
 
-Claude slijedi [CLAUDE.md](CLAUDE.md):
+Then clone the repository, start Claude Code in it and write, for example:
 
-1. pokaže ti koji je box i čeka potvrdu,
-2. **napravi potpun backup** ([backup.sh](backup.sh): postavke, popisi aplikacija, APK-ovi tvojih
-   aplikacija) i s tobom spremi podatke iz aplikacija poput TiviMatea; dok backup nije gotov i
-   provjeren, na boxu ne mijenja ništa,
-3. s tobom prođe popis aplikacija (što ostaje, što ide) i počisti box,
-4. instalira launcher i SmartTube,
-5. pita te za mjesto, klub, kalendar i Todoist i sam napravi i pošalje datoteke s postavkama.
+> Set up this launcher on my Xiaomi box, the IP address is 192.168.1.50.
 
-Na TV-u ćeš jednom morati potvrditi "Allow USB debugging".
+Claude follows [CLAUDE.md](CLAUDE.md):
 
-### B) Ručno
+1. shows you which box it found and waits for your confirmation,
+2. **makes a complete backup** ([backup.sh](backup.sh): settings, app lists, APKs of your apps)
+   and helps you save data inside apps such as TiviMate; until the backup is done and checked,
+   it changes nothing on the box,
+3. goes through the app list with you (what stays, what goes) and cleans up the box,
+4. installs the launcher and SmartTube,
+5. asks for your place, club, calendar and Todoist, and creates and sends the settings files.
 
-Gotov APK je u [Releases](../../releases). Korak po korak (instalacija, čišćenje, SmartTube,
-slanje datoteka) piše u [UPUTE.md](UPUTE.md).
+On the TV you will once have to confirm "Allow USB debugging".
 
-## Osobne postavke
+### B) Manually
 
-Launcher radi i bez ikakvih postavki (Zagreb i Hajduk). Za svoje dodaj na box jednu ili dvije
-male tekstualne datoteke. Pošalješ ih kroz **Primi datoteke** (na TV-u otvori Primi datoteke, na
-mobitelu upiši adresu s ekrana i odaberi datoteku), a s Claude Codeom ih on napravi i pošalje
-umjesto tebe.
+The ready-made APK is in [Releases](../../releases). Step by step (backup, installation,
+cleanup, SmartTube, sending files) is in [MANUAL.md](MANUAL.md).
 
-| Datoteka | Što | Primjer |
+## Personal settings
+
+The launcher works without any settings (Zagreb and HNK Hajduk Split). For your own, add one or
+two small text files to the box. Send them with **Primi datoteke** (open it on the TV, type the
+address shown there into your phone's browser and pick the file); with Claude Code, Claude
+creates and sends them for you.
+
+| File | What | Example |
 |---|---|---|
-| `postavke.txt` | mjesto i klub | [postavke.primjer.txt](postavke.primjer.txt) |
-| `kalendari.txt` | Google kalendar (tajna iCal adresa) i Todoist | [kalendari.primjer.txt](kalendari.primjer.txt) |
+| `settings.txt` | place and club | [settings.example.txt](settings.example.txt) |
+| `calendars.txt` | Google Calendar (secret iCal address) and Todoist | [calendars.example.txt](calendars.example.txt) |
 
-`kalendari.txt` sadrži tajne (adresu kalendara i Todoist ključ). Nikad ga ne commitaj; obje
-datoteke su zato u `.gitignore`.
+`calendars.txt` contains secrets (your calendar address and Todoist token). Never commit it; both
+files are in `.gitignore` for that reason.
 
-## Gradnja
+## Building
 
-Bez Android Studija: `TOOLS=/put/do/alata sh build.sh`. Što treba u mapi s alatima i odakle se
-skida, piše u [CLAUDE.md](CLAUDE.md#gradnja-apk-a). Za instalaciju dovoljan je i APK iz Releases.
+No Android Studio needed: `TOOLS=/path/to/tools sh build.sh`. What goes in the tools folder and
+where to get it is in [CLAUDE.md](CLAUDE.md#building-the-apk). To just install, the APK from
+Releases is enough.

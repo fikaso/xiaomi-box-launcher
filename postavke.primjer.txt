@@ -1,9 +1,0 @@
-# Primjer za postavke.txt. Kopiraj u postavke.txt, prilagodi i pošalji na box
-# (Primi datoteke ili adb push u "/sdcard/Download/TV Box/"). Reci s # se preskaču.
-
-# Mjesto za prognozu i DHMZ upozorenja (bez ovog retka: Zagreb).
-mjesto: Osijek
-
-# Klub za pločicu "sljedeća utakmica" (bez ovog retka: Hajduk). Ime ili FotMob id;
-# "klub: nijedan" skriva pločicu.
-klub: Hajduk

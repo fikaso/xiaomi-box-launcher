@@ -14,9 +14,9 @@ import java.net.URL;
 import java.net.URLEncoder;
 
 /**
- * Mjesto za prognozu i DHMZ upozorenja. Bira se retkom "mjesto: Osijek" u {@code postavke.txt}
- * (šalje se preko "Primi datoteke", kao kalendari.txt); koordinate i županiju jednom potraži
- * Open-Meteo geokodiranje i zapamti. Bez postavki je Zagreb.
+ * Location for the forecast and DHMZ warnings. Chosen with a line "location: Osijek" in {@code settings.txt}
+ * (sent via "Primi datoteke" (receive files), like calendars.txt); coordinates and county are looked up
+ * once with Open-Meteo geocoding and stored. Without settings it is Zagreb.
  */
 final class Place {
 
@@ -25,7 +25,7 @@ final class Place {
     final String name;
     final double lat;
     final double lon;
-    /** Županija kako je piše DHMZ: "Osječko-baranjska", "Grad Zagreb". */
+    /** County as DHMZ writes it: "Osječko-baranjska", "Grad Zagreb". */
     final String county;
 
     private Place(String name, double lat, double lon, String county) {
@@ -35,7 +35,7 @@ final class Place {
         this.county = county;
     }
 
-    /** Zapamćeno mjesto, bez mreže; null dok mjesto iz postavki još nije pronađeno. */
+    /** Stored location, without network; null until the location from settings has been found. */
     static Place current(Context context) {
         String wanted = configured(context);
         if (wanted == null) return DEFAULT;
@@ -45,7 +45,7 @@ final class Place {
                 Double.parseDouble(sp.getString("lon", "0")), sp.getString("county", ""));
     }
 
-    /** Kao {@link #current}, ali novo mjesto iz postavki potraži na mreži. Zove se izvan glavne niti. */
+    /** Like {@link #current}, but looks up a new location from settings online. Called off the main thread. */
     static Place resolve(Context context) throws IOException {
         Place p = current(context);
         if (p != null) return p;
@@ -54,7 +54,7 @@ final class Place {
             String url = "https://geocoding-api.open-meteo.com/v1/search?count=1&language=hr&countryCode=HR&name="
                     + URLEncoder.encode(wanted, "UTF-8");
             JSONArray results = new JSONObject(get(url)).optJSONArray("results");
-            if (results == null || results.length() == 0) throw new IOException("Nema mjesta " + wanted);
+            if (results == null || results.length() == 0) throw new IOException("No location " + wanted);
             JSONObject r = results.getJSONObject(0);
             String county = r.optString("admin1").replace(" županija", "").trim();
             store(context).edit()
@@ -71,7 +71,7 @@ final class Place {
     }
 
     private static String configured(Context context) {
-        return Postavke.get(context, "mjesto");
+        return UserConfig.get(context, "location");
     }
 
     private static SharedPreferences store(Context context) {

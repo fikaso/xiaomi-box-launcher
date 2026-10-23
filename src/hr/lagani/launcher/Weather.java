@@ -17,24 +17,24 @@ import java.util.Calendar;
 import java.util.List;
 
 /**
- * Vrijeme za mjesto iz postavki (vidi {@link Place}) s Open-Meteo (besplatno, bez ključa i
- * registracije): trenutno stanje, danas i sljedeća 3 dana.
- * Zadnji odgovor se pamti, pa se pokaže odmah pri paljenju, i prije nego što se box spoji na mrežu.
+ * Weather for the location from settings (see {@link Place}) from Open-Meteo (free, no key or
+ * sign-up): current conditions, today and the next 3 days.
+ * The last response is stored, so it shows right at startup, even before the box connects to the network.
  */
 final class Weather {
 
     static final long REFRESH_MS = 30 * 60 * 1000L;
-    /** Starije od ovoga se ne prikazuje: bolje ništa nego krivo vrijeme. */
+    /** Anything older is not shown: better nothing than the wrong weather. */
     private static final long MAX_AGE_MS = 6 * 60 * 60 * 1000L;
 
-    /** Ide iza "?latitude=..&longitude=..". */
+    /** Goes after "?latitude=..&longitude=..". */
     private static final String QUERY = "&current=temperature_2m,weather_code,is_day"
             + "&daily=weather_code,temperature_2m_max,temperature_2m_min"
             + "&timezone=Europe%2FZagreb&forecast_days=4";
 
     private static final String[] DAY_NAMES = {"Ned", "Pon", "Uto", "Sri", "Čet", "Pet", "Sub"};
 
-    /** Jedan dan prognoze; days.get(0) je danas. */
+    /** One forecast day; days.get(0) is today. */
     static final class Day {
         final String name;
         final int code;
@@ -89,7 +89,7 @@ final class Weather {
 
     boolean isUsable() { return System.currentTimeMillis() - fetchedAt < MAX_AGE_MS && !days.isEmpty(); }
 
-    /** Opis prema WMO kodu koji vraća Open-Meteo. */
+    /** Description for the WMO code returned by Open-Meteo. */
     static String description(int code, boolean day) {
         switch (code) {
             case 0: return day ? "Sunčano" : "Vedro";
@@ -123,13 +123,13 @@ final class Weather {
         return "☂";
     }
 
-    // ---------------------------------------------------------------- dohvat i pamćenje
+    // ---------------------------------------------------------------- fetching and caching
 
     private static SharedPreferences store(Context context) {
         return context.getSharedPreferences("weather", Context.MODE_PRIVATE);
     }
 
-    /** Dohvati, spremi i vrati. Zove se izvan glavne niti. */
+    /** Fetches, stores and returns. Called off the main thread. */
     static Weather fetch(Context context) throws IOException, JSONException {
         Place place = Place.resolve(context);
         String url = String.format(java.util.Locale.ROOT,
@@ -149,12 +149,12 @@ final class Weather {
             c.disconnect();
         }
         long now = System.currentTimeMillis();
-        Weather w = new Weather(place.name, json, now); // baci iznimku prije spremanja ako odgovor ne valja
+        Weather w = new Weather(place.name, json, now); // throws before storing if the response is invalid
         store(context).edit().putString("json", json).putLong("at", now).putString("place", place.name).apply();
         return w;
     }
 
-    /** Zapamćeno vrijeme, ali samo za mjesto koje je trenutno u postavkama. */
+    /** Stored weather, but only for the location currently in settings. */
     static Weather load(Context context) {
         SharedPreferences sp = store(context);
         String json = sp.getString("json", null);

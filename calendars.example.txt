@@ -1,0 +1,11 @@
+# Example for calendars.txt (optional). Copy it to calendars.txt and send it to the box the same way
+# as settings.txt. This file contains SECRET addresses and keys: never commit or publish it.
+# When it exists, an EVENTS | TODO panel appears below the forecast and calendar.
+
+# Google Calendar: calendar.google.com in a browser → Settings → choose the calendar →
+# "Integrate calendar" → "Secret address in iCal format". One line per calendar.
+https://calendar.google.com/calendar/ical/XXXXXXXX%40group.calendar.google.com/private-XXXXXXXXXXXXXXXX/basic.ics
+
+# Todoist (optional): Settings → Integrations → Developer → API token.
+# After the token, the name of the project whose tasks are shown (without a name: "TV").
+todoist: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX TV

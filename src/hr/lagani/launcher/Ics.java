@@ -11,18 +11,18 @@ import java.util.List;
 import java.util.TimeZone;
 
 /**
- * Minimalni čitač iCal (.ics) kalendara: javni kalendar praznika i "tajna adresa u iCal formatu"
- * zajedničkog Google kalendara. Ponavljanja (RRULE) podržava za DAILY/WEEKLY/MONTHLY/YEARLY
- * s INTERVAL, COUNT, UNTIL i BYDAY (tjedno), što pokriva rođendane i tjedne obveze.
+ * Minimal iCal (.ics) calendar reader: the public holiday calendar and the "secret address in iCal format"
+ * of a shared Google calendar. Supports recurrence (RRULE) for DAILY/WEEKLY/MONTHLY/YEARLY
+ * with INTERVAL, COUNT, UNTIL and BYDAY (weekly), which covers birthdays and weekly chores.
  */
 final class Ics {
 
     static final class Event {
         final String title;
-        final long start;      // za cjelodnevne: lokalna ponoć
+        final long start;      // for all-day events: local midnight
         final long end;
         final boolean allDay;
-        final String freq;     // null za jednokratne, inače DAILY/WEEKLY/MONTHLY/YEARLY
+        final String freq;     // null for one-off events, otherwise DAILY/WEEKLY/MONTHLY/YEARLY
 
         Event(String title, long start, long end, boolean allDay, String freq) {
             this.title = title;
@@ -52,10 +52,10 @@ final class Ics {
         }
     }
 
-    /** Svi događaji (i ponavljanja) koji se preklapaju s [from, to). */
+    /** All events (and recurrences) that overlap [from, to). */
     static List<Event> between(String ics, long from, long to) {
         List<Event> result = new ArrayList<>();
-        // "Odmotaj" duge retke: nastavak počinje razmakom ili tabom.
+        // "Unfold" long lines: a continuation starts with a space or tab.
         String text = ics.replace("\r\n", "\n").replace("\n ", "").replace("\n\t", "");
         String summary = null, dtstart = null, dtend = null, rrule = null;
         boolean inEvent = false, cancelled = false;
@@ -119,7 +119,7 @@ final class Ics {
             long t = cur.getTimeInMillis();
             if (t > until || t >= to) break;
             if ("MONTHLY".equals(freq) && byDay != null) {
-                // Npr. BYDAY=1MO (prvi ponedjeljak), -1FR (zadnji petak), MO (svaki ponedjeljak).
+                // E.g. BYDAY=1MO (first Monday), -1FR (last Friday), MO (every Monday).
                 for (Calendar day : monthDays(cur, byDay)) {
                     if (made >= count) break;
                     if (day.before(start)) continue;
@@ -133,7 +133,7 @@ final class Ics {
                 continue;
             }
             if ("WEEKLY".equals(freq) && byDay != null) {
-                // Tjedan po tjedan; unutar tjedna svi navedeni dani.
+                // Week by week; within a week, all listed days.
                 Calendar week = (Calendar) cur.clone();
                 week.set(Calendar.DAY_OF_WEEK, week.getFirstDayOfWeek());
                 for (int d = 0; d < 7 && made < count; d++) {
@@ -158,7 +158,7 @@ final class Ics {
         }
     }
 
-    /** Dani u mjesecu od {@code month} koji odgovaraju BYDAY (s vremenom iz {@code month}), po redu. */
+    /** Days in the month of {@code month} that match BYDAY (with the time from {@code month}), in order. */
     private static List<Calendar> monthDays(Calendar month, String byDay) {
         List<Calendar> days = new ArrayList<>();
         int last = month.getActualMaximum(Calendar.DAY_OF_MONTH);
@@ -166,7 +166,7 @@ final class Ics {
             Calendar day = (Calendar) month.clone();
             day.set(Calendar.DAY_OF_MONTH, d);
             String code = dayCode(day.get(Calendar.DAY_OF_WEEK));
-            int nth = (d - 1) / 7 + 1;              // koji je to po redu taj dan u mjesecu
+            int nth = (d - 1) / 7 + 1;              // which occurrence of this weekday in the month
             int nthFromEnd = -((last - d) / 7 + 1);
             for (String rule : byDay.split(",")) {
                 if (!rule.endsWith(code)) continue;
@@ -189,7 +189,7 @@ final class Ics {
         out.add(new Event(title, start, end, allDay, freq));
     }
 
-    /** "DTSTART;TZID=Europe/Zagreb:20261022T180000", "...:20261022T160000Z" ili "...;VALUE=DATE:20261022". */
+    /** "DTSTART;TZID=Europe/Zagreb:20261022T180000", "...:20261022T160000Z" or "...;VALUE=DATE:20261022". */
     private static Calendar parse(String line) {
         String v = value(line);
         try {
@@ -198,7 +198,7 @@ final class Ics {
             int d = Integer.parseInt(v.substring(6, 8));
             Calendar c;
             if (v.length() == 8) {
-                c = Calendar.getInstance();                 // cjelodnevni: lokalni datum
+                c = Calendar.getInstance();                 // all-day: local date
                 c.clear();
                 c.set(y, m, d);
                 return c;
@@ -219,7 +219,7 @@ final class Ics {
             c = Calendar.getInstance(tz);
             c.clear();
             c.set(y, m, d, hh, mm, ss);
-            Calendar local = Calendar.getInstance();       // ostatak računa u lokalnoj zoni
+            Calendar local = Calendar.getInstance();       // the rest of the math is in the local zone
             local.setTimeInMillis(c.getTimeInMillis());
             return local;
         } catch (RuntimeException e) {

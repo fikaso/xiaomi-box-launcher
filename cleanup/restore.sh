@@ -1,6 +1,6 @@
 #!/system/bin/sh
-# Vraća sve što je ocisti.sh maknuo.
-#   adb push vrati.sh /data/local/tmp/ && adb shell sh /data/local/tmp/vrati.sh
+# Restores everything cleanup.sh removed.
+#   adb push restore.sh /data/local/tmp/ && adb shell sh /data/local/tmp/restore.sh
 for p in \
   com.google.android.leanbacklauncher com.google.android.apps.tv.launcherx com.google.android.tvlauncher \
   com.google.android.tvrecommendations com.google.android.leanbacklauncher.recommendations \
@@ -16,10 +16,10 @@ for p in \
   com.netflix.ninja com.amazon.amazonvideo.livingroom com.google.android.youtube.tv \
   com.google.android.apps.mediashell com.google.android.katniss com.google.android.speech.pumpkin
 do
-  cmd package install-existing "$p" >/dev/null 2>&1 && echo "  vraćeno: $p"
+  cmd package install-existing "$p" >/dev/null 2>&1 && echo "  restored: $p"
   pm enable "$p" >/dev/null 2>&1
 done
 settings put global window_animation_scale 1
 settings put global transition_animation_scale 1
 settings put global animator_duration_scale 1
-echo "Gotovo. Restartaj box: adb reboot"
+echo "Done. Restart the box: adb reboot"

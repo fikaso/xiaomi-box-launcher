@@ -13,8 +13,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 /**
- * Daje primljene datoteke drugim aplikacijama (instalater paketa, video player...)
- * preko content:// adrese, jer Android 7+ ne dopušta file:// između aplikacija.
+ * Serves received files to other apps (package installer, video player...)
+ * via a content:// URI, because Android 7+ does not allow file:// between apps.
  */
 public class FilesProvider extends ContentProvider {
 

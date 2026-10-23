@@ -7,17 +7,17 @@ import java.io.IOException;
 import java.util.Locale;
 
 /**
- * {@code postavke.txt} u mapi za primanje (šalje se preko "Primi datoteke"): reci "ključ: vrijednost",
- * npr. "mjesto: Osijek" i "klub: Rijeka". Prazni reci i # komentari se preskaču.
+ * {@code settings.txt} in the receive folder (sent via "Primi datoteke" (receive files)): lines "key: value",
+ * e.g. "location: Osijek" and "club: HNK Rijeka". Blank lines and # comments are skipped.
  */
-final class Postavke {
+final class UserConfig {
 
-    static final String FILE = "postavke.txt";
+    static final String FILE = "settings.txt";
 
-    private Postavke() {
+    private UserConfig() {
     }
 
-    /** Vrijednost za ključ ili null ako je nema (ili je prazna). */
+    /** Value for the key, or null if missing (or empty). */
     static String get(Context context, String key) {
         File f = new File(ReceiveActivity.receiveDir(context), FILE);
         if (!f.isFile()) return null;

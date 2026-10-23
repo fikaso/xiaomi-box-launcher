@@ -1,144 +1,151 @@
-# Upute za Claude Code: postavljanje na novi Xiaomi box
+# Instructions for Claude Code: setting up a new Xiaomi box
 
-Korisnik ima klon ovog repozitorija i želi Lagani Launcher na svom Android TV boxu, da radi
-kao kod autora. Odgovaraj na jeziku korisnika. Radi korak po korak i javljaj što radiš;
-korisnik sjedi pred TV-om i povremeno mora nešto potvrditi daljinskim.
+The user has a clone of this repository and wants Lagani Launcher on their Android TV box, working
+the way it does for the author. Reply in the user's language. Work step by step and say what you
+are doing; the user sits in front of the TV and now and then has to confirm something with the remote.
 
-## Pravila
+## Rules
 
-- **Bez potpunog backupa nema promjena.** Korak 3 (backup) je obavezan i ide prije čišćenja,
-  instalacije i postavki. Ako `backup.sh` javi grešku ili korisnik još nije spremio podatke iz
-  aplikacija, stani i riješi to; ne preskači ga ni kad korisnik žuri (objasni zašto).
-- **Prije bilo kakve promjene na boxu** pokaži korisniku model (`getprop ro.product.model`), ime
-  (`settings get global device_name`), verziju Androida i slobodnu memoriju, i čekaj potvrdu da je
-  to njegov box. Na mreži zna biti više boxova (npr. roditeljski).
-- Ne diraj aplikacije koje korisnik koristi. Popis za brisanje uvijek mu prvo pokaži.
-- `kalendari.txt` sadrži tajne (adresu kalendara, Todoist ključ): ne ispisuj ih u chat, ne
-  commitaj, ne stavljaj u repozitorij. Isto vrijedi za IPTV liste i TiviMate backupe: to su
-  korisnikove liste s adresama i prijavama. `postavke.txt`, `kalendari.txt`, `*.m3u`, `*.m3u8`,
-  `*.tmb` i `backup-*/` su u `.gitignore` i tako treba ostati.
-- Ako je box zauzet (`dumpsys media_session` pokazuje `state=3`, netko gleda), ne otvaraj
-  aplikacije na njemu; pitaj korisnika.
-- U Git Bashu na Windowsu putanje na boxu (`/sdcard/...`) prije `adb push` zaštiti s
-  `export MSYS_NO_PATHCONV=1`, inače ih Git Bash pretvori u Windows putanje.
+- **No changes without a complete backup.** Step 3 (backup) is mandatory and comes before cleanup,
+  installation and settings. If `backup.sh` reports an error or the user hasn't saved the data in
+  their apps yet, stop and sort it out; don't skip it even when the user is in a hurry (explain why).
+- **Before any change on the box**, show the user the model (`getprop ro.product.model`), name
+  (`settings get global device_name`), Android version and free memory, and wait for confirmation
+  that it's their box. There may be several boxes on the network (e.g. their parents').
+- Don't touch apps the user uses. Always show them the removal list first.
+- `calendars.txt` contains secrets (calendar address, Todoist token): don't print them in the chat,
+  don't commit them, don't put them in the repository. The same goes for IPTV playlists and
+  TiviMate backups: they are the user's lists with URLs and logins. `settings.txt`,
+  `calendars.txt`, `*.m3u`, `*.m3u8`, `*.tmb` and `backup-*/` are in `.gitignore` and must stay there.
+- If the box is busy (`dumpsys media_session` shows `state=3`, someone is watching), don't open
+  apps on it; ask the user.
+- In Git Bash on Windows, protect box paths (`/sdcard/...`) before `adb push` with
+  `export MSYS_NO_PATHCONV=1`, otherwise Git Bash turns them into Windows paths.
 
-## 1. Alati na računalu
+## 1. Tools on the computer
 
 - **adb**: Android SDK Platform-Tools (developer.android.com/tools/releases/platform-tools).
-- **APK**: najjednostavnije gotov `LaganiLauncher.apk` iz GitHub Releases ovog repozitorija.
-  Gradnja iz koda je u odjeljku [Gradnja APK-a](#gradnja-apk-a).
+- **APK**: easiest is the ready-made `LaganiLauncher.apk` from this repository's GitHub Releases.
+  Building from source is described in [Building the APK](#building-the-apk).
 
-## 2. Spajanje na box
+## 2. Connecting to the box
 
-1. Ako korisnik još nije: Postavke → Sustav / Device Preferences → O uređaju → 7× klik na
-   **Build** (Google TV: "Android TV OS build"), pa Opcije za razvojne programere → **USB debugging**.
-   IP adresa: Postavke → Mreža i internet → mreža.
-2. `adb connect <IP>:5555`. Ako javi "failed to authenticate", korisnik na TV-u mora potvrditi
-   **Allow USB debugging** (najbolje uz "Always allow").
-3. Pokaži model, ime, Android, RAM (`cat /proc/meminfo | head -3`) i čekaj potvrdu (vidi Pravila).
+1. If the user hasn't yet: Settings → System / Device Preferences → About → click **Build** 7 times
+   (Google TV: "Android TV OS build"), then Developer options → **USB debugging**.
+   IP address: Settings → Network & Internet → the network.
+2. `adb connect <IP>:5555`. If it says "failed to authenticate", the user has to confirm
+   **Allow USB debugging** on the TV (ideally with "Always allow").
+3. Show model, name, Android, RAM (`cat /proc/meminfo | head -3`) and wait for confirmation (see Rules).
 
-## 3. Backup (obavezno, prije svega ostalog)
+## 3. Backup (mandatory, before anything else)
 
-1. **Box:** `sh backup.sh <IP>` (na Windowsu u Git Bashu; ako `adb` nije u PATH-u:
-   `ADB_BIN=/put/do/adb.exe sh backup.sh <IP>`). Skripta sprema u `backup-<model>-<datum>/`
-   svojstva boxa, sve postavke, popise aplikacija (i ugašenih i maknutih), trenutni početni
-   ekran, APK-ove aplikacija koje je korisnik sam instalirao i snimku ekrana, pa provjeri da
-   ništa bitno nije prazno. Mora završiti s "Backup OK".
-2. **Podaci u aplikacijama** (bez roota se ne mogu kopirati izvana). Pitaj korisnika koje
-   aplikacije koristi i što bi mu bilo teško ponovno namjestiti, pa neka u njima napravi backup.
-   Za aplikacije koje nema preskoči (u `paketi-instalirani.txt` iz backupa vidiš što ima):
-   - **TiviMate** (`ar.tvplayer.tv`): Postavke → Općenito → Sigurnosna kopija podataka (sprema
-     `.tmb` datoteku); nađi je s `adb shell find /sdcard -name "*.tmb"` i `adb pull` u backup
-     mapu. Sadržaj ne otvaraj i ne ispisuj.
-   - **SmartTube**: Postavke → Sigurnosno kopiranje.
-   - **Stremio**: addoni i popisi su na Stremio računu; provjeri da je korisnik prijavljen.
-   - Ostalo (IPTV liste, prijave): neka zapiše ili spremi na svoj način.
-3. Korisniku pokaži sažetak (mapa, broj aplikacija i APK-ova, što je spremljeno iz aplikacija) i
-   reci kako se vraća: `ciscenje/vrati.sh` vraća maknute sistemske aplikacije, APK-ovi iz
-   `apk/` se instaliraju s `adb install-multiple` (sve datoteke istog paketa zajedno), postavke
-   iz `settings-*.txt` se vraćaju ručno s `settings put`.
-4. Mapa je u `.gitignore` (zna sadržavati osobne podatke); nikad je ne commitaj.
+1. **The box:** `sh backup.sh <IP>` (on Windows in Git Bash; if `adb` is not on PATH:
+   `ADB_BIN=/path/to/adb.exe sh backup.sh <IP>`). The script saves to `backup-<model>-<date>/` the
+   device properties, all settings, app lists (including disabled and removed apps), the current
+   home screen, APKs of the apps the user installed and a screenshot, then checks that nothing
+   important is empty. It must end with "Backup OK".
+2. **Data inside apps** (cannot be copied from outside without root). Ask the user which apps they
+   use and what would be hard to set up again, and have them back those up in the app. Skip apps
+   they don't have (`packages-user-installed.txt` in the backup shows what's installed):
+   - **TiviMate** (`ar.tvplayer.tv`): Settings → General → Backup data (saves a `.tmb` file);
+     find it with `adb shell find /sdcard -name "*.tmb"` and `adb pull` it into the backup folder.
+     Don't open or print its contents.
+   - **SmartTube**: Settings → Backup.
+   - **Stremio**: add-ons and lists live in the Stremio account; check the user is signed in.
+   - Anything else (IPTV playlists, logins): have the user write it down or save it their own way.
+3. Show the user a summary (folder, number of apps and APKs, what was saved from apps) and how to
+   restore: `cleanup/restore.sh` brings back removed system apps, APKs in `apk/` install with
+   `adb install-multiple` (all files of one package together), settings from `settings-*.txt` are
+   restored by hand with `settings put`.
+4. The folder is in `.gitignore` (it can contain personal data); never commit it.
 
-Tek kad je ovo gotovo, idi na čišćenje.
+Only when this is done, move on to cleanup.
 
-## 4. Čišćenje
+## 4. Cleanup
 
-1. `pm list packages` i usporedi s popisom u `ciscenje/ocisti.sh` (odjeljak 1 je sigurno za
-   maknuti; odjeljak 2 su "po želji" aplikacije poput Netflixa ili YouTubea).
-2. Pokaži korisniku što bi otišlo, posebno ono iz odjeljka 2, i pitaj što koristi. Popis
-   prilagodi njegovom odgovoru i modelu boxa (skripta je pisana za Mi Box 4/S i Xiaomi TV Box S).
-3. `adb push ciscenje/ocisti.sh /data/local/tmp/` → `adb shell sh /data/local/tmp/ocisti.sh` →
-   `adb reboot`. Ništa se ne briše trajno; `ciscenje/vrati.sh` sve vraća.
+1. `pm list packages` and compare with the lists in `cleanup/cleanup.sh` (section 1 is safe to
+   remove; section 2 holds optional apps such as Netflix or YouTube, all commented out).
+2. Show the user what would go, especially section 2, and ask what they use. Adjust the lists to
+   their answer and to the box model (the script is written for Mi Box 4/S and Xiaomi TV Box S).
+3. `adb push cleanup/cleanup.sh /data/local/tmp/` → `adb shell sh /data/local/tmp/cleanup.sh` →
+   `adb reboot`. Nothing is deleted permanently; `cleanup/restore.sh` puts everything back.
 
 ## 5. Launcher
 
 1. `adb install -r LaganiLauncher.apk`
-2. Početni ekran: `adb shell cmd package set-home-activity hr.lagani.launcher/.HomeActivity`.
-   Na Google TV-u `ocisti.sh` ugasi i `setupwraith`, inače on preuzme tipku Home.
-3. Dozvola za mapu s postavkama (bez nje launcher čita iz svoje privatne mape):
+2. Home screen: `adb shell cmd package set-home-activity hr.lagani.launcher/.HomeActivity`.
+   On Google TV `cleanup.sh` also disables `setupwraith`, otherwise it takes over the Home button.
+3. Permission for the settings folder (without it the launcher reads from its private folder):
    `adb shell pm grant hr.lagani.launcher android.permission.WRITE_EXTERNAL_STORAGE`
-4. Provjera: `adb shell input keyevent KEYCODE_HOME`, pa `adb exec-out screencap -p > s.png` i
-   pogledaj sliku.
+4. Check: `adb shell input keyevent KEYCODE_HOME`, then `adb exec-out screencap -p > s.png` and
+   look at the picture.
 
-## 6. Osobne postavke (pitaj korisnika, jedno po jedno)
+## 6. Personal settings (ask the user, one at a time)
 
-Datoteke napravi lokalno (u .gitignoreu su) i pošalji ih u mapu za primanje:
-`adb push postavke.txt "/sdcard/Download/TV Box/postavke.txt"` (isto za `kalendari.txt`).
-Launcher ih pročita pri sljedećem osvježavanju; brže je `adb shell am force-stop hr.lagani.launcher`
-pa tipka Home. Predložak je u `postavke.primjer.txt` i `kalendari.primjer.txt`.
+Create the files locally (they are in .gitignore) and send them to the receive folder:
+`adb push settings.txt "/sdcard/Download/TV Box/settings.txt"` (same for `calendars.txt`).
+The launcher reads them on the next refresh; faster is `adb shell am force-stop hr.lagani.launcher`
+and then the Home key. Templates: `settings.example.txt` and `calendars.example.txt`.
 
-1. **Mjesto** ("Za koje mjesto da pokazujem prognozu?") → `mjesto: <ime>` u `postavke.txt`.
-   Launcher sam nađe koordinate i županiju za DHMZ (Open-Meteo geokodiranje, samo Hrvatska).
-2. **Klub.** Pitaj točno ovako, s osmijehom:
+1. **Place** ("Which place should I show the forecast for?") → `location: <name>` in `settings.txt`.
+   The launcher finds the coordinates and the county for DHMZ itself (Open-Meteo geocoding,
+   Croatia only).
+2. **Club.** Ask exactly like this, with a smile (in the user's language; for Croatian users use
+   the Croatian version):
 
-   > ⚽ Još jedna formalnost: potvrdi da navijaš za najveći hrvatski klub, **Hajduk Split**!
+   > ⚽ Još jedna formalnost: potvrdi da navijaš za najveći hrvatski klub, **HNK Hajduk Split**!
    > (Ako ipak ne, reci za koji klub navijaš, ili "nijedan" ako te nogomet ne zanima.)
 
-   Potvrdi li, upiši `klub: Hajduk`. Za drugi klub upiši ime (`klub: Rijeka`; launcher ga potraži
-   na FotMobu, a provjeri i sam da `https://www.fotmob.com/api/data/search/suggest?term=<ime>`
-   vraća pravi klub). Za "nijedan" upiši `klub: nijedan`.
-3. **Kalendar** (po želji). Treba tajna iCal adresa: calendar.google.com u pregledniku →
-   Postavke → odaberi kalendar → "Integriraj kalendar" → **Tajna adresa u iCal formatu**.
-   Korisnik je može zalijepiti u chat (ti je samo zapišeš u `kalendari.txt`, ne ponavljaš) ili
-   sam napraviti `kalendari.txt` i poslati ga kroz **Primi datoteke**. Googleova sinkronizacija
-   kalendara na Android TV-u uglavnom ne radi, zato iCal.
-4. **Todoist** (po želji): Todoist → Postavke → Integracije → Za programere → API token.
-   Redak `todoist: <token> <ime projekta>` (bez imena projekta: "TV"). Token daje pristup
-   cijelom Todoist računu: isto kao kalendar, ne ponavljaj ga.
+   > ⚽ One more formality: please confirm that you support the greatest Croatian club,
+   > **HNK Hajduk Split**! (If not, tell me which club you support, or "none" if football isn't
+   > your thing.)
 
-Bez `kalendari.txt` nema ploče DOGAĐAJI | TODO; ostalo radi.
+   If they confirm, write `club: HNK Hajduk Split`. For another club write its name
+   (`club: HNK Rijeka`; the launcher looks it up on FotMob, but check yourself that
+   `https://www.fotmob.com/api/data/search/suggest?term=<name>` returns the right club).
+   For none write `club: none`.
+3. **Calendar** (optional). Needs the secret iCal address: calendar.google.com in a browser →
+   Settings → choose the calendar → "Integrate calendar" → **Secret address in iCal format**.
+   The user can paste it into the chat (you only write it into `calendars.txt`, never repeat it)
+   or create `calendars.txt` themselves and send it via **Primi datoteke**. Google's calendar sync
+   on Android TV mostly doesn't work, hence iCal.
+4. **Todoist** (optional): Todoist → Settings → Integrations → Developer → API token.
+   Line `todoist: <token> <project name>` (without a project name: "TV"). The token gives access
+   to the whole Todoist account: like the calendar, never repeat it.
 
-## 7. SmartTube (YouTube bez reklama)
+Without `calendars.txt` there is no EVENTS | TODO panel; everything else works.
 
-Ako korisnik želi: najnoviji `SmartTube_stable_..._armeabi-v7a.apk` s
-https://github.com/yuliskov/SmartTube/releases (stari paketi `com.teamsmart.videomanager.tv` i
-`com.liskovsoft.smarttubetv.beta` imaju ukradeni ključ, prvo ih deinstaliraj). SponsorBlock je u
-njegovim postavkama uključen sam od sebe; provjeri (Postavke → SponsorBlock → Enable).
+## 7. SmartTube (YouTube without ads)
 
-## 8. Kraj
+If the user wants it: the latest `SmartTube_stable_..._armeabi-v7a.apk` from
+https://github.com/yuliskov/SmartTube/releases (the old packages `com.teamsmart.videomanager.tv`
+and `com.liskovsoft.smarttubetv.beta` have a stolen signing key; uninstall them first). SponsorBlock
+is on by default in its settings; check it (Settings → SponsorBlock → Enable).
 
-- Snimka početnog ekrana korisniku.
-- Pitaj treba li **isključiti USB debugging** (`adb shell settings put global adb_enabled 0`);
-  za kasnije promjene ga korisnik opet uključuje.
+## 8. Finish
 
-## Gradnja APK-a
+- Send the user a screenshot of the home screen.
+- Ask whether to **turn off USB debugging** (`adb shell settings put global adb_enabled 0`);
+  for later changes the user turns it on again.
 
-`TOOLS=<mapa s alatima> sh build.sh` (radi i u Git Bashu na Windowsu). Treba JDK 11+ i u `$TOOLS`:
+## Building the APK
 
-| Datoteka | Odakle |
+`TOOLS=<tools folder> sh build.sh` (also works in Git Bash on Windows). Needs JDK 11+ and in `$TOOLS`:
+
+| File | Where from |
 |---|---|
-| `aapt2_64` (`aapt2_64.exe` na Windowsu) | iz `apktool.jar` (github.com/iBotPeaches/Apktool/releases): `prebuilt/<os>/aapt2`, preimenuj |
-| `android-framework.jar` | iz istog `apktool.jar`: `prebuilt/android-framework.jar` |
+| `aapt2_64` (`aapt2_64.exe` on Windows) | from `apktool.jar` (github.com/iBotPeaches/Apktool/releases): `prebuilt/<os>/aapt2`, renamed |
+| `android-framework.jar` | from the same `apktool.jar`: `prebuilt/android-framework.jar` |
 | `dx.jar` | Maven Central `com.jakewharton.android.repackaged:dalvik-dx:9.0.0_r3` |
 | `android28.jar` | Maven Central `org.robolectric:android-all:9-robolectric-4913185-2` |
-| `release.p12` + `release.pass` | ključ za potpis; ako ga nema, `build.sh` ga napravi uz lozinku iz `release.pass` (ili `KEY_PASS`) |
+| `release.p12` + `release.pass` | signing key; if missing, `build.sh` creates it with the password from `release.pass` (or `KEY_PASS`) |
 
-APK potpisan drugim ključem ne može se instalirati preko verzije iz Releases: prvo
-`adb uninstall hr.lagani.launcher` (gube se skrivene aplikacije i postavka Auto TiviMate).
+An APK signed with a different key can't be installed over the Releases version: first
+`adb uninstall hr.lagani.launcher` (hidden apps and the Auto TiviMate setting are lost).
 
-## Kad nešto ne radi
+## When something doesn't work
 
-- Nema prognoze: `adb logcat -d | grep LaganiLauncher` (greške dohvaćanja se tu zapisuju).
-- Nema utakmice: FotMob bez User-Agenta vraća 403 (launcher ga šalje); kanal se objavljuje
-  ~10 dana unaprijed, dotad piše "TV kanal još nije objavljen".
-- DHMZ pločica se vidi samo dok postoji žuto, narančasto ili crveno upozorenje za županiju.
+- No forecast: `adb logcat -d | grep LaganiLauncher` (fetch errors are logged there).
+- No match: FotMob returns 403 without a User-Agent (the launcher sends one); the channel is
+  published ~10 days ahead, until then the tile says "TV kanal još nije objavljen".
+- The DHMZ tile only shows while there is a yellow, orange or red warning for the county.

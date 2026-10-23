@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-/** Nakon paljenja boxa označi da launcher treba otvoriti TiviMate (ako je to uključeno). */
+/** After the box boots, flags that the launcher should open TiviMate (if enabled). */
 public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -12,8 +12,8 @@ public class BootReceiver extends BroadcastReceiver {
         Prefs prefs = new Prefs(context);
         if (!prefs.autostart()) return;
         prefs.setAutostartPending(true);
-        // Na Androidu 9 i starijem možemo odmah otvoriti aplikaciju; na novijima to
-        // napravi launcher čim se prikaže (vidi HomeActivity.onResume).
+        // On Android 9 and older we can open the app right away; on newer versions the
+        // launcher does it as soon as it is shown (see HomeActivity.onResume).
         Intent launch = HomeActivity.launchIntentFor(context, prefs.autostartPackage());
         if (launch != null && android.os.Build.VERSION.SDK_INT < 29) {
             try {

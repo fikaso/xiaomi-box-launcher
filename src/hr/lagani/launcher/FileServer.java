@@ -15,9 +15,9 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Mali HTTP server za primanje datoteka iz preglednika na istoj mreži.
- * GET /  -> stranica za odabir datoteka
- * PUT /upload?name=... -> tijelo zahtjeva se spremi kao datoteka u {@code dir}
+ * Small HTTP server for receiving files from a browser on the same network.
+ * GET /  -> page for picking files
+ * PUT /upload?name=... -> the request body is saved as a file in {@code dir}
  */
 final class FileServer {
 
@@ -37,7 +37,7 @@ final class FileServer {
         this.listener = listener;
     }
 
-    /** Pokreće server na prvom slobodnom portu od {@code firstPort}; vraća port. */
+    /** Starts the server on the first free port from {@code firstPort}; returns the port. */
     int start(int firstPort) throws IOException {
         IOException last = null;
         for (int port = firstPort; port < firstPort + 10; port++) {
@@ -108,7 +108,7 @@ final class FileServer {
             } else if ((method.equals("PUT") || method.equals("POST")) && target.startsWith("/upload?")) {
                 receive(in, out, target, headers);
             } else {
-                respond(out, "404 Not Found", "text/plain; charset=utf-8", "Nema");
+                respond(out, "404 Not Found", "text/plain; charset=utf-8", "Not found");
             }
         } catch (IOException ignored) {
         } finally {
@@ -126,11 +126,11 @@ final class FileServer {
         try {
             length = Long.parseLong(headers.get("content-length"));
         } catch (RuntimeException e) {
-            respond(out, "411 Length Required", "text/plain; charset=utf-8", "Nedostaje Content-Length");
+            respond(out, "411 Length Required", "text/plain; charset=utf-8", "Content-Length required");
             return;
         }
         if (!dir.isDirectory() && !dir.mkdirs()) {
-            respond(out, "500 Internal Server Error", "text/plain; charset=utf-8", "Ne mogu spremiti");
+            respond(out, "500 Internal Server Error", "text/plain; charset=utf-8", "Cannot save");
             return;
         }
 
@@ -152,7 +152,7 @@ final class FileServer {
         File dest = unique(name);
         if (!part.renameTo(dest)) {
             part.delete();
-            respond(out, "500 Internal Server Error", "text/plain; charset=utf-8", "Ne mogu spremiti");
+            respond(out, "500 Internal Server Error", "text/plain; charset=utf-8", "Cannot save");
             return;
         }
         listener.onReceived(dest);
@@ -202,14 +202,14 @@ final class FileServer {
         out.flush();
     }
 
-    /** Čita jednu liniju zaglavlja (do CRLF); null na kraju toka. */
+    /** Reads one header line (up to CRLF); null at end of stream. */
     private static String readLine(InputStream in) throws IOException {
         ByteArrayOutputStream line = new ByteArrayOutputStream();
         int c;
         while ((c = in.read()) != -1) {
             if (c == '\n') break;
             if (c != '\r') line.write(c);
-            if (line.size() > 16 * 1024) throw new IOException("predugačko zaglavlje");
+            if (line.size() > 16 * 1024) throw new IOException("header too long");
         }
         if (c == -1 && line.size() == 0) return null;
         return line.toString("UTF-8");

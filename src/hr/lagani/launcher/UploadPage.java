@@ -1,6 +1,6 @@
 package hr.lagani.launcher;
 
-/** Stranica koju preglednik na laptopu/mobitelu dobije na adresi boxa. */
+/** The page a laptop/phone browser gets at the box's address. */
 final class UploadPage {
     private UploadPage() {}
 
