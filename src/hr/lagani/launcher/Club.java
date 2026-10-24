@@ -38,7 +38,10 @@ final class Club {
     private static final long REFRESH_MS = 3 * 60 * 60 * 1000L;
     /** The match is still shown for two hours after kickoff. */
     private static final long SHOW_AFTER_KICKOFF_MS = 2 * 60 * 60 * 1000L;
-    private static final String[] DAYS = {"ned", "pon", "uto", "sri", "čet", "pet", "sub"};
+    private static final String[] DAYS_HR = {"ned", "pon", "uto", "sri", "čet", "pet", "sub"};
+    private static final String[] DAYS_EN = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+    private static final String[] MONTHS_EN = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
     static final class Match {
         final String home, away, competition, channels;
@@ -146,16 +149,23 @@ final class Club {
         return name.replaceFirst("^(H?NK|FK|GNK) ", "");
     }
 
-    /** "sub 26. 10. u 18:00" or "danas u 18:00". */
+    /** "sub 26. 10. u 18:00" / "danas u 18:00", or in English "Sat 26 Oct, 18:00" / "today, 18:00". */
     static String when(Match m) {
         Calendar c = Calendar.getInstance();
         c.setTimeInMillis(m.kickoff);
         Calendar today = Calendar.getInstance();
         int diff = c.get(Calendar.DAY_OF_YEAR) - today.get(Calendar.DAY_OF_YEAR)
                 + 365 * (c.get(Calendar.YEAR) - today.get(Calendar.YEAR));
+        String time = String.format(Locale.ROOT, "%d:%02d", c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE));
+        int weekday = c.get(Calendar.DAY_OF_WEEK) - 1;
+        if (!Lang.hr()) {
+            String day = diff <= 0 ? "today" : diff == 1 ? "tomorrow"
+                    : DAYS_EN[weekday] + " " + c.get(Calendar.DAY_OF_MONTH) + " " + MONTHS_EN[c.get(Calendar.MONTH)];
+            return day + ", " + time;
+        }
         String day = diff <= 0 ? "danas" : diff == 1 ? "sutra"
-                : DAYS[c.get(Calendar.DAY_OF_WEEK) - 1] + " " + c.get(Calendar.DAY_OF_MONTH) + ". " + (c.get(Calendar.MONTH) + 1) + ".";
-        return day + String.format(Locale.ROOT, " u %d:%02d", c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE));
+                : DAYS_HR[weekday] + " " + c.get(Calendar.DAY_OF_MONTH) + ". " + (c.get(Calendar.MONTH) + 1) + ".";
+        return day + " u " + time;
     }
 
     private static String get(String url) throws IOException {
@@ -163,7 +173,7 @@ final class Club {
         c.setConnectTimeout(10000);
         c.setReadTimeout(20000);
         // Without a User-Agent, CloudFront returns 403.
-        c.setRequestProperty("User-Agent", "LaganiLauncher (Android TV)");
+        c.setRequestProperty("User-Agent", "LiteLauncher (Android TV)");
         try {
             if (c.getResponseCode() != 200) throw new IOException("HTTP " + c.getResponseCode());
             InputStream in = c.getInputStream();

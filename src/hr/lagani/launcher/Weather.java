@@ -32,7 +32,8 @@ final class Weather {
             + "&daily=weather_code,temperature_2m_max,temperature_2m_min"
             + "&timezone=Europe%2FZagreb&forecast_days=4";
 
-    private static final String[] DAY_NAMES = {"Ned", "Pon", "Uto", "Sri", "Čet", "Pet", "Sub"};
+    private static final String[] DAY_NAMES_HR = {"Ned", "Pon", "Uto", "Sri", "Čet", "Pet", "Sub"};
+    private static final String[] DAY_NAMES_EN = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
     /** One forecast day; days.get(0) is today. */
     static final class Day {
@@ -82,7 +83,7 @@ final class Weather {
         String[] p = isoDate.split("-");
         Calendar c = Calendar.getInstance();
         c.set(Integer.parseInt(p[0]), Integer.parseInt(p[1]) - 1, Integer.parseInt(p[2]));
-        return DAY_NAMES[c.get(Calendar.DAY_OF_WEEK) - 1];
+        return (Lang.hr() ? DAY_NAMES_HR : DAY_NAMES_EN)[c.get(Calendar.DAY_OF_WEEK) - 1];
     }
 
     boolean isFresh() { return System.currentTimeMillis() - fetchedAt < REFRESH_MS; }
@@ -92,23 +93,23 @@ final class Weather {
     /** Description for the WMO code returned by Open-Meteo. */
     static String description(int code, boolean day) {
         switch (code) {
-            case 0: return day ? "Sunčano" : "Vedro";
-            case 1: return "Pretežno vedro";
-            case 2: return "Djelomično oblačno";
-            case 3: return "Oblačno";
-            case 45: case 48: return "Magla";
-            case 51: case 53: case 55: return "Rosulja";
-            case 56: case 57: case 66: case 67: return "Ledena kiša";
-            case 61: return "Slaba kiša";
-            case 63: return "Kiša";
-            case 65: return "Jaka kiša";
-            case 71: case 73: case 77: return "Snijeg";
-            case 75: return "Jak snijeg";
-            case 80: case 81: return "Pljuskovi";
-            case 82: return "Jaki pljuskovi";
-            case 85: case 86: return "Snježni pljuskovi";
-            case 95: return "Grmljavina";
-            case 96: case 99: return "Grmljavina s tučom";
+            case 0: return day ? Lang.t("Sunny", "Sunčano") : Lang.t("Clear", "Vedro");
+            case 1: return Lang.t("Mostly clear", "Pretežno vedro");
+            case 2: return Lang.t("Partly cloudy", "Djelomično oblačno");
+            case 3: return Lang.t("Cloudy", "Oblačno");
+            case 45: case 48: return Lang.t("Fog", "Magla");
+            case 51: case 53: case 55: return Lang.t("Drizzle", "Rosulja");
+            case 56: case 57: case 66: case 67: return Lang.t("Freezing rain", "Ledena kiša");
+            case 61: return Lang.t("Light rain", "Slaba kiša");
+            case 63: return Lang.t("Rain", "Kiša");
+            case 65: return Lang.t("Heavy rain", "Jaka kiša");
+            case 71: case 73: case 77: return Lang.t("Snow", "Snijeg");
+            case 75: return Lang.t("Heavy snow", "Jak snijeg");
+            case 80: case 81: return Lang.t("Showers", "Pljuskovi");
+            case 82: return Lang.t("Heavy showers", "Jaki pljuskovi");
+            case 85: case 86: return Lang.t("Snow showers", "Snježni pljuskovi");
+            case 95: return Lang.t("Thunderstorm", "Grmljavina");
+            case 96: case 99: return Lang.t("Thunderstorm with hail", "Grmljavina s tučom");
             default: return "";
         }
     }

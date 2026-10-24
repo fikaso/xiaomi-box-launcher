@@ -4,16 +4,20 @@ package hr.lagani.launcher;
 final class UploadPage {
     private UploadPage() {}
 
-    static final String HTML = "<!doctype html><html lang=hr><head><meta charset=utf-8>"
+    /** The page in the language from settings.txt. */
+    static String html() {
+        String title = Lang.t("Send to TV box", "Pošalji na TV box");
+        return "<!doctype html><html lang=" + Lang.t("en", "hr") + "><head><meta charset=utf-8>"
             + "<meta name=viewport content='width=device-width,initial-scale=1'>"
-            + "<title>Pošalji na TV box</title><style>"
+            + "<title>" + title + "</title><style>"
             + "body{font-family:system-ui,sans-serif;background:#0b0f14;color:#fff;margin:0;padding:24px;max-width:640px;margin:auto}"
             + "h1{font-size:24px}label.drop{display:block;border:2px dashed #42a5f5;border-radius:12px;padding:40px 16px;"
             + "text-align:center;font-size:18px;cursor:pointer}label.drop.over{background:#14304d}"
             + "input{display:none}.f{margin:12px 0;font-size:15px}.bar{height:8px;background:#222;border-radius:4px;overflow:hidden}"
             + ".bar i{display:block;height:100%;width:0;background:#42a5f5}.ok{color:#66bb6a}.err{color:#ef5350}"
-            + "</style></head><body><h1>Pošalji na TV box</h1>"
-            + "<label class=drop id=drop>Dodirni ovdje ili povuci datoteke<input type=file id=pick multiple></label>"
+            + "</style></head><body><h1>" + title + "</h1>"
+            + "<label class=drop id=drop>" + Lang.t("Tap here or drag files", "Dodirni ovdje ili povuci datoteke")
+            + "<input type=file id=pick multiple></label>"
             + "<div id=list></div><script>"
             + "var pick=document.getElementById('pick'),drop=document.getElementById('drop'),list=document.getElementById('list'),q=[],busy=false;"
             + "pick.onchange=function(){add(pick.files);pick.value=''};"
@@ -28,7 +32,8 @@ final class UploadPage {
             + "x.upload.onprogress=function(e){if(e.lengthComputable)bar.style.width=(100*e.loaded/e.total)+'%'};"
             + "x.onload=function(){var ok=x.status==200;it.el.firstChild.className=ok?'ok':'err';"
             + "it.el.firstChild.textContent=(ok?'\\u2713 ':'\\u2717 ')+it.file.name;bar.style.width='100%';busy=false;next()};"
-            + "x.onerror=function(){it.el.firstChild.className='err';it.el.firstChild.textContent='\\u2717 '+it.file.name+' (provjeri je li ekran Primi datoteke otvoren na TV-u)';busy=false;next()};"
+            + "x.onerror=function(){it.el.firstChild.className='err';it.el.firstChild.textContent='\\u2717 '+it.file.name+' (" + Lang.t("check that the Upload files screen is open on the TV", "provjeri je li ekran Primi datoteke otvoren na TV-u") + ")';busy=false;next()};"
             + "x.send(it.file)}"
             + "</script></body></html>";
+    }
 }

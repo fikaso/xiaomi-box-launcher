@@ -174,7 +174,7 @@ final class FileServer {
     static String safeName(String raw) {
         String n = raw == null ? "" : raw.replaceAll("[\\\\/:*?\"<>|\\x00-\\x1f]", "_").trim();
         while (n.startsWith(".")) n = n.substring(1);
-        if (n.isEmpty()) n = "datoteka";
+        if (n.isEmpty()) n = "file";
         return n.length() > 120 ? n.substring(n.length() - 120) : n;
     }
 

@@ -1,10 +1,10 @@
-# Xiaomi Box Launcher (Lagani Launcher)
+# Xiaomi Box Lite Launcher
 
 A light home screen for Xiaomi Android TV boxes (Mi Box 4/S, Xiaomi TV Box S with Google TV) in
 an Apple TV-like "glass" style. Instead of Xiaomi's and Google's recommendations and ads it shows
 only what you need:
 
-![Home screen](docs/screenshot.jpg)
+![Home screen](docs/screenshot.png)
 
 - **weather** for your place (today and 3 days, Open-Meteo),
 - a **month calendar** with today and Croatian public holidays,
@@ -12,10 +12,11 @@ only what you need:
 - **DHMZ weather warnings** for your county (wind, rain, snow...), only while there are any,
 - optionally **events** from Google Calendar and **tasks** from Todoist,
 - an app grid (TiviMate, Stremio, SmartTube, YouTube first), hiding apps, starting TiviMate
-  automatically after power-on, and **Primi datoteke** (receive files: send APKs, videos and
+  automatically after power-on, and **Upload files** (send APKs, videos and
   settings to the box from a browser on your phone or laptop).
 
-The on-screen labels are in Croatian (the launcher is made for Croatian viewers).
+The interface is in English by default; `language: hr` in `settings.txt` switches it, the weather
+descriptions, DHMZ warnings and holiday names to Croatian.
 
 There is also a script that removes recommendations, ads and Xiaomi analytics from the box
 (`cleanup/cleanup.sh`, undone by `cleanup/restore.sh`).
@@ -44,7 +45,8 @@ Claude follows [CLAUDE.md](CLAUDE.md):
    it changes nothing on the box,
 3. goes through the app list with you (what stays, what goes) and cleans up the box,
 4. installs the launcher and SmartTube,
-5. asks for your place, club, calendar and Todoist, and creates and sends the settings files.
+5. asks for the language, your place, club, calendar and Todoist, and creates and sends the
+   settings files.
 
 On the TV you will once have to confirm "Allow USB debugging".
 
@@ -55,14 +57,14 @@ cleanup, SmartTube, sending files) is in [MANUAL.md](MANUAL.md).
 
 ## Personal settings
 
-The launcher works without any settings (Zagreb and HNK Hajduk Split). For your own, add one or
-two small text files to the box. Send them with **Primi datoteke** (open it on the TV, type the
+The launcher works without any settings (English, Zagreb and HNK Hajduk Split). For your own, add one or
+two small text files to the box. Send them with **Upload files** (open it on the TV, type the
 address shown there into your phone's browser and pick the file); with Claude Code, Claude
 creates and sends them for you.
 
 | File | What | Example |
 |---|---|---|
-| `settings.txt` | place and club | [settings.example.txt](settings.example.txt) |
+| `settings.txt` | place, club and language | [settings.example.txt](settings.example.txt) |
 | `calendars.txt` | Google Calendar (secret iCal address) and Todoist | [calendars.example.txt](calendars.example.txt) |
 
 `calendars.txt` contains secrets (your calendar address and Todoist token). Never commit it; both

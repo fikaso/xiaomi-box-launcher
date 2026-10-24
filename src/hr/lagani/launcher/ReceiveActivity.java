@@ -64,6 +64,7 @@ public class ReceiveActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Lang.load(this);
         setContentView(buildUi());
         if (Build.VERSION.SDK_INT >= 23
                 && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -93,13 +94,13 @@ public class ReceiveActivity extends Activity {
     private void startServer() {
         if (server != null) return;
         File dir = receiveDir(this);
-        server = new FileServer(dir, UploadPage.HTML, new FileServer.Listener() {
+        server = new FileServer(dir, UploadPage.html(), new FileServer.Listener() {
             @Override
             public void onReceived(final File file) {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        status.setText("Primljeno: " + file.getName());
+                        status.setText(Lang.t("Received: ", "Primljeno: ") + file.getName());
                         refreshFiles();
                     }
                 });
@@ -108,11 +109,11 @@ public class ReceiveActivity extends Activity {
         try {
             int port = server.start(PORT);
             String ip = localIp();
-            address.setText(ip == null ? "Box nije spojen na mrežu" : "http://" + ip + (port == 80 ? "" : ":" + port));
-            status.setText("Čekam datoteke…  (sprema se u " + dir.getAbsolutePath() + ")");
+            address.setText(ip == null ? Lang.t("The box is not connected to a network", "Box nije spojen na mrežu") : "http://" + ip + (port == 80 ? "" : ":" + port));
+            status.setText(Lang.t("Waiting for files…  (saved to ", "Čekam datoteke…  (sprema se u ") + dir.getAbsolutePath() + ")");
         } catch (IOException e) {
             server = null;
-            address.setText("Ne mogu pokrenuti primanje");
+            address.setText(Lang.t("Can't start receiving", "Ne mogu pokrenuti primanje"));
             status.setText(String.valueOf(e.getMessage()));
         }
         refreshFiles();
@@ -156,11 +157,12 @@ public class ReceiveActivity extends Activity {
         root.setBackground(Glass.background(this));
         root.setPadding(dp(48), dp(27), dp(48), dp(16));
 
-        TextView title = text("Primi datoteke", 28, Color.WHITE);
+        TextView title = text(Lang.t("Upload files", "Primi datoteke"), 28, Color.WHITE);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         root.addView(title);
 
-        root.addView(text("Na laptopu ili mobitelu (ista mreža) otvori u pregledniku:", 16,
+        root.addView(text(Lang.t("On a laptop or phone (same network), open in a browser:",
+                "Na laptopu ili mobitelu (ista mreža) otvori u pregledniku:"), 16,
                 Color.argb(200, 255, 255, 255)), withTop(dp(18)));
 
         address = text("…", 40, ACCENT);
@@ -170,7 +172,8 @@ public class ReceiveActivity extends Activity {
         status = text("", 14, Color.argb(160, 255, 255, 255));
         root.addView(status, withTop(dp(6)));
 
-        root.addView(text("Primljene datoteke (OK: otvori ili instaliraj, dugi pritisak: obriši)", 15,
+        root.addView(text(Lang.t("Received files (OK: open or install, long press: delete)",
+                "Primljene datoteke (OK: otvori ili instaliraj, dugi pritisak: obriši)"), 15,
                 Color.argb(200, 255, 255, 255)), withTop(dp(22)));
 
         ListView list = new ListView(this);
@@ -261,21 +264,21 @@ public class ReceiveActivity extends Activity {
         try {
             startActivity(i);
         } catch (RuntimeException e) {
-            Toast.makeText(this, "Nema aplikacije koja otvara ovu datoteku", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, Lang.t("No app can open this file", "Nema aplikacije koja otvara ovu datoteku"), Toast.LENGTH_LONG).show();
         }
     }
 
     private void confirmDelete(final File f) {
         new AlertDialog.Builder(this, AlertDialog.THEME_DEVICE_DEFAULT_DARK)
-                .setTitle("Obrisati " + f.getName() + "?")
-                .setPositiveButton("Obriši", new DialogInterface.OnClickListener() {
+                .setTitle(Lang.t("Delete ", "Obrisati ") + f.getName() + "?")
+                .setPositiveButton(Lang.t("Delete", "Obriši"), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         f.delete();
                         refreshFiles();
                     }
                 })
-                .setNegativeButton("Odustani", null)
+                .setNegativeButton(Lang.t("Cancel", "Odustani"), null)
                 .show();
     }
 }

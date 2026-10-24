@@ -1,6 +1,6 @@
 # Instructions for Claude Code: setting up a new Xiaomi box
 
-The user has a clone of this repository and wants Lagani Launcher on their Android TV box, working
+The user has a clone of this repository and wants Lite Launcher on their Android TV box, working
 the way it does for the author. Reply in the user's language. Work step by step and say what you
 are doing; the user sits in front of the TV and now and then has to confirm something with the remote.
 
@@ -25,7 +25,7 @@ are doing; the user sits in front of the TV and now and then has to confirm some
 ## 1. Tools on the computer
 
 - **adb**: Android SDK Platform-Tools (developer.android.com/tools/releases/platform-tools).
-- **APK**: easiest is the ready-made `LaganiLauncher.apk` from this repository's GitHub Releases.
+- **APK**: easiest is the ready-made `LiteLauncher.apk` from this repository's GitHub Releases.
   Building from source is described in [Building the APK](#building-the-apk).
 
 ## 2. Connecting to the box
@@ -72,7 +72,7 @@ Only when this is done, move on to cleanup.
 
 ## 5. Launcher
 
-1. `adb install -r LaganiLauncher.apk`
+1. `adb install -r LiteLauncher.apk`
 2. Home screen: `adb shell cmd package set-home-activity hr.lagani.launcher/.HomeActivity`.
    On Google TV `cleanup.sh` also disables `setupwraith`, otherwise it takes over the Home button.
 3. Permission for the settings folder (without it the launcher reads from its private folder):
@@ -87,10 +87,13 @@ Create the files locally (they are in .gitignore) and send them to the receive f
 The launcher reads them on the next refresh; faster is `adb shell am force-stop hr.lagani.launcher`
 and then the Home key. Templates: `settings.example.txt` and `calendars.example.txt`.
 
-1. **Place** ("Which place should I show the forecast for?") → `location: <name>` in `settings.txt`.
+1. **Language** of the interface: English (default) or Croatian → `language: en` / `language: hr`
+   in `settings.txt`. It also switches weather descriptions, DHMZ warnings and holiday names.
+   Suggest the language the user is talking to you in.
+2. **Place** ("Which place should I show the forecast for?") → `location: <name>` in `settings.txt`.
    The launcher finds the coordinates and the county for DHMZ itself (Open-Meteo geocoding,
    Croatia only).
-2. **Club.** Ask exactly like this, with a smile (in the user's language; for Croatian users use
+3. **Club.** Ask exactly like this, with a smile (in the user's language; for Croatian users use
    the Croatian version):
 
    > ⚽ Još jedna formalnost: potvrdi da navijaš za najveći hrvatski klub, **HNK Hajduk Split**!
@@ -104,12 +107,12 @@ and then the Home key. Templates: `settings.example.txt` and `calendars.example.
    (`club: HNK Rijeka`; the launcher looks it up on FotMob, but check yourself that
    `https://www.fotmob.com/api/data/search/suggest?term=<name>` returns the right club).
    For none write `club: none`.
-3. **Calendar** (optional). Needs the secret iCal address: calendar.google.com in a browser →
+4. **Calendar** (optional). Needs the secret iCal address: calendar.google.com in a browser →
    Settings → choose the calendar → "Integrate calendar" → **Secret address in iCal format**.
    The user can paste it into the chat (you only write it into `calendars.txt`, never repeat it)
-   or create `calendars.txt` themselves and send it via **Primi datoteke**. Google's calendar sync
+   or create `calendars.txt` themselves and send it via **Upload files**. Google's calendar sync
    on Android TV mostly doesn't work, hence iCal.
-4. **Todoist** (optional): Todoist → Settings → Integrations → Developer → API token.
+5. **Todoist** (optional): Todoist → Settings → Integrations → Developer → API token.
    Line `todoist: <token> <project name>` (without a project name: "TV"). The token gives access
    to the whole Todoist account: like the calendar, never repeat it.
 
@@ -145,7 +148,7 @@ An APK signed with a different key can't be installed over the Releases version:
 
 ## When something doesn't work
 
-- No forecast: `adb logcat -d | grep LaganiLauncher` (fetch errors are logged there).
+- No forecast: `adb logcat -d | grep LiteLauncher` (fetch errors are logged there).
 - No match: FotMob returns 403 without a User-Agent (the launcher sends one); the channel is
-  published ~10 days ahead, until then the tile says "TV kanal još nije objavljen".
+  published ~10 days ahead, until then the tile says "TV channel not announced yet".
 - The DHMZ tile only shows while there is a yellow, orange or red warning for the county.

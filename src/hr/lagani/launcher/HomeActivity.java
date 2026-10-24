@@ -89,6 +89,7 @@ public class HomeActivity extends Activity {
     private TextView weatherSymbol;
     private TextView weatherNow;
     private TextView weatherInfo;
+    private TextView weatherToday;
     private final TextView[][] forecast = new TextView[3][3]; // [day][name, symbol, temperatures]
     private boolean weatherLoading;
     private final TextView[][] agendaRows = new TextView[3][2]; // [row][day, time and title]
@@ -113,9 +114,16 @@ public class HomeActivity extends Activity {
     private static final int HOLIDAY = Color.rgb(255, 107, 94);
     /** Day with an event from the personal calendar (MIBOX4 only): blue as on the iPhone. */
     private static final int EVENT = Color.rgb(100, 190, 255);
-    private static final String[] WEEKDAYS = {"nedjelja", "ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota"};
-    private static final String[] MONTHS = {"siječanj", "veljača", "ožujak", "travanj", "svibanj", "lipanj",
+    private static final String[] WEEKDAYS_HR = {"nedjelja", "ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota"};
+    private static final String[] WEEKDAYS_EN = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+    private static final String[] MONTHS_HR = {"siječanj", "veljača", "ožujak", "travanj", "svibanj", "lipanj",
             "srpanj", "kolovoz", "rujan", "listopad", "studeni", "prosinac"};
+    /** Croatian months in the genitive, as in "petak, 23. listopada". */
+    private static final String[] MONTHS_HR_OF = {"siječnja", "veljače", "ožujka", "travnja", "svibnja", "lipnja",
+            "srpnja", "kolovoza", "rujna", "listopada", "studenoga", "prosinca"};
+    private static final String[] MONTHS_EN = {"January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"};
+    private TextView dateText;
 
     /** Every 30 min: weather (if stale) and calendar (for the rollover to a new day). */
     private final Runnable weatherTick = new Runnable() {
@@ -140,6 +148,7 @@ public class HomeActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         prefs = new Prefs(this);
+        Lang.load(this);
         setContentView(buildUi());
         if (Agenda.personal(this) && !Agenda.allowed(this) && android.os.Build.VERSION.SDK_INT >= 23) {
             requestPermissions(new String[]{android.Manifest.permission.READ_CALENDAR}, 2);
@@ -162,6 +171,11 @@ public class HomeActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        // A new settings.txt with a different language: build the screen again in that language.
+        if (Lang.load(this)) {
+            recreate();
+            return;
+        }
         if (prefs.autostartPending()) {
             prefs.setAutostartPending(false);
             if (prefs.autostart() && launch(prefs.autostartPackage())) return;
@@ -194,7 +208,7 @@ public class HomeActivity extends Activity {
                     w = Weather.fetch(app);
                 } catch (Exception e) {
                     // No network or the service is down: the last known weather stays.
-                    android.util.Log.w("LaganiLauncher", "Weather fetch failed", e);
+                    android.util.Log.w("LiteLauncher", "Weather fetch failed", e);
                 }
                 final Weather result = w;
                 ui.post(new Runnable() {
@@ -216,16 +230,16 @@ public class HomeActivity extends Activity {
         weatherSymbol.setText(Weather.symbol(w.code, w.day));
         weatherNow.setText(w.temp + "°");
         String desc = Weather.description(w.code, w.day);
-        weatherInfo.setText(w.place + (desc.isEmpty() ? "" : " · " + desc)
-                + "\n");
+        weatherInfo.setText(w.place + (desc.isEmpty() ? "" : " · " + desc));
+        weatherToday.setText("");
         // All bars share the same scale (lowest and highest of all shown days).
         int lo = today.min, hi = today.max;
         for (int i = 1; i < w.days.size() && i <= forecast.length; i++) {
             lo = Math.min(lo, w.days.get(i).min);
             hi = Math.max(hi, w.days.get(i).max);
         }
-        weatherInfo.append("Danas  ");
-        weatherInfo.append(Glass.range(this, today.min, today.max, lo, hi, dp(30), dp(5)));
+        weatherToday.append(Lang.t("Today  ", "Danas  "));
+        weatherToday.append(Glass.range(this, today.min, today.max, lo, hi, dp(30), dp(5)));
         for (int i = 0; i < forecast.length; i++) {
             boolean has = i + 1 < w.days.size();
             for (TextView t : forecast[i]) t.setVisibility(has ? View.VISIBLE : View.INVISIBLE);
@@ -283,7 +297,7 @@ public class HomeActivity extends Activity {
             agendaRows[i][1].setText(it.time.isEmpty() ? it.title : it.time + "  " + it.title);
         }
         agendaEmpty.setVisibility(n == 0 ? View.VISIBLE : View.GONE);
-        agendaEmpty.setText("Nema događaja");
+        agendaEmpty.setText(Lang.t("No events", "Nema događaja"));
     }
 
     // ---------------------------------------------------------------- Notices
@@ -330,7 +344,7 @@ public class HomeActivity extends Activity {
             int dim = s.length();
             s.append("  ·  ").append(Club.when(m));
             if (!m.competition.isEmpty() && !"HNL".equals(m.competition)) s.append("  ·  ").append(m.competition);
-            s.append("  ·  ").append(m.channels.isEmpty() ? "TV kanal još nije objavljen" : m.channels);
+            s.append("  ·  ").append(m.channels.isEmpty() ? Lang.t("TV channel not announced yet", "TV kanal još nije objavljen") : m.channels);
             s.setSpan(new android.text.style.ForegroundColorSpan(Glass.TEXT_DIM), dim, s.length(), 0);
             matchPill.setText(s);
         }
@@ -393,9 +407,14 @@ public class HomeActivity extends Activity {
         for (Agenda.Item it : events) eventDays.add(it.day);
         java.util.Calendar now = java.util.Calendar.getInstance();
         int today = now.get(java.util.Calendar.DAY_OF_MONTH);
-        monthWeekday.setText(WEEKDAYS[now.get(java.util.Calendar.DAY_OF_WEEK) - 1].toUpperCase(new java.util.Locale("hr")));
+        int month = now.get(java.util.Calendar.MONTH);
+        String weekday = (Lang.hr() ? WEEKDAYS_HR : WEEKDAYS_EN)[now.get(java.util.Calendar.DAY_OF_WEEK) - 1];
+        monthWeekday.setText(weekday.toUpperCase(Lang.locale()));
         monthDay.setText(String.valueOf(today));
-        monthName.setText(MONTHS[now.get(java.util.Calendar.MONTH)] + " " + now.get(java.util.Calendar.YEAR));
+        monthName.setText((Lang.hr() ? MONTHS_HR : MONTHS_EN)[month] + " " + now.get(java.util.Calendar.YEAR));
+        // Top right under the clock: "petak, 23. listopada" / "Friday, 23 October".
+        dateText.setText(Lang.hr() ? weekday + ", " + today + ". " + MONTHS_HR_OF[month]
+                : weekday + ", " + today + " " + MONTHS_EN[month]);
 
         java.util.Calendar day = monthStart();
         int offset = (day.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7; // week starts on Monday
@@ -435,8 +454,9 @@ public class HomeActivity extends Activity {
         if (next != null) {
             java.util.Calendar h = java.util.Calendar.getInstance();
             h.setTimeInMillis(next.getKey());
-            String when = next.getKey() == todayStart ? "Danas"
-                    : h.get(java.util.Calendar.DAY_OF_MONTH) + ". " + (h.get(java.util.Calendar.MONTH) + 1) + ".";
+            String when = next.getKey() == todayStart ? Lang.t("Today", "Danas")
+                    : Lang.hr() ? h.get(java.util.Calendar.DAY_OF_MONTH) + ". " + (h.get(java.util.Calendar.MONTH) + 1) + "."
+                    : h.get(java.util.Calendar.DAY_OF_MONTH) + " " + MONTHS_EN[h.get(java.util.Calendar.MONTH)].substring(0, 3);
             monthHoliday.setText(when + "  " + next.getValue());
         }
     }
@@ -474,13 +494,13 @@ public class HomeActivity extends Activity {
 
     private void confirmDone(final Todo.Item task) {
         new AlertDialog.Builder(this, AlertDialog.THEME_DEVICE_DEFAULT_DARK)
-                .setTitle("Odrađeno?")
+                .setTitle(Lang.t("Done?", "Odrađeno?"))
                 .setMessage(task.text)
-                .setPositiveButton("Da, odrađeno", new DialogInterface.OnClickListener() {
+                .setPositiveButton(Lang.t("Yes, done", "Da, odrađeno"), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) { markDone(task); }
                 })
-                .setNegativeButton("Odustani", null)
+                .setNegativeButton(Lang.t("Cancel", "Odustani"), null)
                 .show();
     }
 
@@ -493,7 +513,8 @@ public class HomeActivity extends Activity {
                 ui.post(new Runnable() {
                     @Override
                     public void run() {
-                        toast(ok ? "Označeno kao odrađeno" : "Nije uspjelo, provjeri internet");
+                        toast(ok ? Lang.t("Marked as done", "Označeno kao odrađeno")
+                                : Lang.t("Failed, check the internet connection", "Nije uspjelo, provjeri internet"));
                         if (ok) refreshAgenda();
                     }
                 });
@@ -531,7 +552,7 @@ public class HomeActivity extends Activity {
         panel.setBackground(Glass.pane(dp(18), 22, 40, 1));
         panel.setPadding(dp(18), dp(10), dp(14), dp(10));
 
-        LinearLayout events = column("Događaji");
+        LinearLayout events = column(Lang.t("Events", "Događaji"));
         for (int i = 0; i < agendaRows.length; i++) {
             LinearLayout line = new LinearLayout(this);
             line.setOrientation(LinearLayout.HORIZONTAL);
@@ -558,7 +579,7 @@ public class HomeActivity extends Activity {
 
         // Todo: tasks are selected with the remote (up from the apps), OK marks them done.
         // More tasks than fit: the list scrolls with the focus.
-        LinearLayout todo = column("Todo");
+        LinearLayout todo = column(Lang.t("To-do", "Todo"));
         todoScroll = new android.widget.ScrollView(this);
         todoScroll.setVerticalScrollBarEnabled(false);
         todoScroll.setFillViewport(true);
@@ -569,7 +590,7 @@ public class HomeActivity extends Activity {
         slp.topMargin = dp(2);
         todo.addView(todoScroll, slp);
         todoEmpty = text(14, Glass.TEXT_DIM);
-        todoEmpty.setText("Sve odrađeno");
+        todoEmpty.setText(Lang.t("All done", "Sve odrađeno"));
         todoEmpty.setVisibility(View.GONE);
         todoList.addView(todoEmpty, rowParams());
         panel.addView(todo, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -625,7 +646,7 @@ public class HomeActivity extends Activity {
         LinearLayout days = new LinearLayout(this);
         days.setOrientation(LinearLayout.VERTICAL);
         LinearLayout header = new LinearLayout(this);
-        for (String letter : new String[]{"P", "U", "S", "Č", "P", "S", "N"}) {
+        for (String letter : (Lang.hr() ? new String[]{"P", "U", "S", "Č", "P", "S", "N"} : new String[]{"M", "T", "W", "T", "F", "S", "S"})) {
             TextView t = text(11, Glass.TEXT_DIM);
             t.setGravity(Gravity.CENTER);
             header.addView(t, new LinearLayout.LayoutParams(dp(26), dp(16)));
@@ -692,15 +713,21 @@ public class HomeActivity extends Activity {
         nlp.leftMargin = dp(12);
         big.addView(weatherNow, nlp);
         now.addView(big);
+        // Place and description may wrap to a second line ("Osijek · Djelomično oblačno"),
+        // so the column has a fixed width and the panels next to it don't jump around.
         weatherInfo = text(13, Glass.TEXT_DIM);
         weatherInfo.setLineSpacing(dp(1), 1f);
-        weatherInfo.setMaxWidth(dp(185));
         weatherInfo.setMaxLines(2);
         weatherInfo.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        LinearLayout.LayoutParams ilp = wrap();
+        LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         ilp.topMargin = dp(6);
         now.addView(weatherInfo, ilp);
-        LinearLayout.LayoutParams wlp = wrap();
+        weatherToday = text(13, Glass.TEXT_DIM);
+        weatherToday.setSingleLine(true);
+        LinearLayout.LayoutParams tlp = wrap();
+        tlp.topMargin = dp(3);
+        now.addView(weatherToday, tlp);
+        LinearLayout.LayoutParams wlp = new LinearLayout.LayoutParams(dp(150), ViewGroup.LayoutParams.WRAP_CONTENT);
         wlp.rightMargin = dp(10);
         weatherPanel.addView(now, wlp);
 
@@ -721,7 +748,7 @@ public class HomeActivity extends Activity {
             }
             ((LinearLayout.LayoutParams) forecast[i][1].getLayoutParams()).topMargin = dp(4);
             ((LinearLayout.LayoutParams) forecast[i][2].getLayoutParams()).topMargin = dp(4);
-            weatherPanel.addView(col, new LinearLayout.LayoutParams(dp(86), ViewGroup.LayoutParams.WRAP_CONTENT));
+            weatherPanel.addView(col, new LinearLayout.LayoutParams(dp(80), ViewGroup.LayoutParams.WRAP_CONTENT));
         }
 
         weatherPanel.setLayoutParams(new LinearLayout.LayoutParams(
@@ -781,26 +808,27 @@ public class HomeActivity extends Activity {
                 boolean on = !prefs.autostart();
                 prefs.setAutostart(on);
                 updateAutostartButton();
-                toast(on ? "TiviMate će se otvoriti sam nakon paljenja boxa" : "Automatsko pokretanje isključeno");
+                toast(on ? Lang.t("TiviMate will open by itself after the box starts", "TiviMate će se otvoriti sam nakon paljenja boxa")
+                        : Lang.t("Automatic start turned off", "Automatsko pokretanje isključeno"));
             }
         });
         top.addView(autostartButton);
 
-        Button hiddenButton = topButton("Skrivene");
+        Button hiddenButton = topButton(Lang.t("Hidden", "Skrivene"));
         hiddenButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) { showHidden(); }
         });
         top.addView(hiddenButton);
 
-        Button receive = topButton("Primi datoteke");
+        Button receive = topButton(Lang.t("Upload files", "Primi datoteke"));
         receive.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) { startSafely(new Intent(HomeActivity.this, ReceiveActivity.class)); }
         });
         top.addView(receive);
 
-        Button settings = topButton("Postavke");
+        Button settings = topButton(Lang.t("Settings", "Postavke"));
         settings.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) { startSafely(new Intent(Settings.ACTION_SETTINGS)); }
@@ -820,12 +848,12 @@ public class HomeActivity extends Activity {
         clock.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
         clock.setIncludeFontPadding(false);
         time.addView(clock);
-        TextClock date = new TextClock(this);
-        date.setFormat24Hour("EEEE, d. MMMM");
-        date.setFormat12Hour("EEEE, d. MMMM");
-        date.setTextColor(Glass.TEXT_DIM);
-        date.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        time.addView(date);
+        // Not a TextClock: that would follow the box's system language instead of settings.txt.
+        // showMonth() sets it, and it runs on resume and every 30 min.
+        dateText = new TextView(this);
+        dateText.setTextColor(Glass.TEXT_DIM);
+        dateText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        time.addView(dateText);
         top.addView(time);
 
         root.addView(top);
@@ -877,7 +905,8 @@ public class HomeActivity extends Activity {
         root.addView(grid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         hint = new TextView(this);
-        hint.setText("Dugi pritisak OK ili tipka Menu na aplikaciji: deinstaliraj, očisti cache, sakrij");
+        hint.setText(Lang.t("Long press OK or the Menu key on an app: uninstall, clear cache, hide",
+                "Dugi pritisak OK ili tipka Menu na aplikaciji: deinstaliraj, očisti cache, sakrij"));
         hint.setTextColor(Color.argb(90, 255, 255, 255));
         hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         hint.setPadding(dp(12), 0, 0, 0);
@@ -938,7 +967,8 @@ public class HomeActivity extends Activity {
     }
 
     private void updateAutostartButton() {
-        autostartButton.setText(prefs.autostart() ? "Auto TiviMate: UKLJ" : "Auto TiviMate: ISKLJ");
+        autostartButton.setText(prefs.autostart() ? Lang.t("Auto TiviMate: ON", "Auto TiviMate: UKLJ")
+                : Lang.t("Auto TiviMate: OFF", "Auto TiviMate: ISKLJ"));
     }
 
     private void toast(String s) {
@@ -1024,7 +1054,7 @@ public class HomeActivity extends Activity {
     private boolean launch(String pkg) {
         Intent i = launchIntentFor(this, pkg);
         if (i == null) {
-            toast("Aplikacija nije instalirana");
+            toast(Lang.t("App not installed", "Aplikacija nije instalirana"));
             return false;
         }
         return startSafely(i);
@@ -1037,17 +1067,17 @@ public class HomeActivity extends Activity {
             overridePendingTransition(0, 0);
             return true;
         } catch (RuntimeException e) {
-            toast("Ne mogu otvoriti");
+            toast(Lang.t("Can't open", "Ne mogu otvoriti"));
             return false;
         }
     }
 
     private void showOptions(final App app) {
         final String[] items = {
-                "Otvori",
-                "Informacije (deinstaliraj / očisti cache / prisilno zaustavi)",
-                "Sakrij s početnog ekrana",
-                "Otvaraj ovu aplikaciju nakon paljenja boxa",
+                Lang.t("Open", "Otvori"),
+                Lang.t("Info (uninstall / clear cache / force stop)", "Informacije (deinstaliraj / očisti cache / prisilno zaustavi)"),
+                Lang.t("Hide from the home screen", "Sakrij s početnog ekrana"),
+                Lang.t("Open this app after the box starts", "Otvaraj ovu aplikaciju nakon paljenja boxa"),
         };
         new AlertDialog.Builder(this, AlertDialog.THEME_DEVICE_DEFAULT_DARK)
                 .setTitle(app.label)
@@ -1072,7 +1102,7 @@ public class HomeActivity extends Activity {
                                 prefs.setAutostartPackage(app.pkg);
                                 prefs.setAutostart(true);
                                 updateAutostartButton();
-                                toast(app.label + " će se otvoriti nakon paljenja boxa");
+                                toast(app.label + Lang.t(" will open after the box starts", " će se otvoriti nakon paljenja boxa"));
                                 break;
                         }
                     }
@@ -1083,7 +1113,7 @@ public class HomeActivity extends Activity {
     private void showHidden() {
         final List<String> hidden = new ArrayList<>(prefs.hidden());
         if (hidden.isEmpty()) {
-            toast("Nema skrivenih aplikacija");
+            toast(Lang.t("No hidden apps", "Nema skrivenih aplikacija"));
             return;
         }
         Collections.sort(hidden);
@@ -1098,7 +1128,7 @@ public class HomeActivity extends Activity {
             labels[i] = label;
         }
         new AlertDialog.Builder(this, AlertDialog.THEME_DEVICE_DEFAULT_DARK)
-                .setTitle("Vrati na početni ekran")
+                .setTitle(Lang.t("Show on the home screen again", "Vrati na početni ekran"))
                 .setItems(labels, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {

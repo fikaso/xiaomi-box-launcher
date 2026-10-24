@@ -102,7 +102,7 @@ final class Dhmz {
                     if ("awareness_level".equals(valueName)) level = value;
                 }
             } else if (e == XmlPullParser.END_TAG && "info".equals(p.getName())) {
-                if (!ours || !"hr".equals(language) || level == null || event == null) continue;
+                if (!ours || !(Lang.hr() ? "hr" : "en").equals(language) || level == null || event == null) continue;
                 int lvl = level.isEmpty() ? 1 : level.charAt(0) - '0';
                 long from = time(onset), to = time(expires);
                 if (lvl < 2 || to <= now) continue;
@@ -121,10 +121,10 @@ final class Dhmz {
         }
     }
 
-    /** "do 20 h", "danas od 14 h", "sutra 8–20 h" (hours without minutes, as in the forecast). */
+    /** "do 20 h", "danas 14–20 h", "sutra 8–20 h" (hours without minutes, as in the forecast); in English "until 20:00", "tomorrow 8:00–20:00". */
     static String when(Warning w) {
         long now = System.currentTimeMillis();
-        if (w.onset <= now) return "do " + dayPrefix(w.expires) + hour(w.expires);
+        if (w.onset <= now) return Lang.t("until ", "do ") + dayPrefix(w.expires) + hour(w.expires);
         return dayPrefix(w.onset).trim() + " " + hourOnly(w.onset) + "–" + hour(w.expires);
     }
 
@@ -134,8 +134,9 @@ final class Dhmz {
         c.setTimeInMillis(t);
         int diff = c.get(Calendar.DAY_OF_YEAR) - today.get(Calendar.DAY_OF_YEAR)
                 + 365 * (c.get(Calendar.YEAR) - today.get(Calendar.YEAR));
-        if (diff <= 0) return "danas ";
-        if (diff == 1) return "sutra ";
+        if (diff <= 0) return Lang.t("today ", "danas ");
+        if (diff == 1) return Lang.t("tomorrow ", "sutra ");
+        if (!Lang.hr()) return c.get(Calendar.DAY_OF_MONTH) + "/" + (c.get(Calendar.MONTH) + 1) + " ";
         return c.get(Calendar.DAY_OF_MONTH) + "." + (c.get(Calendar.MONTH) + 1) + ". ";
     }
 
@@ -143,10 +144,11 @@ final class Dhmz {
         Calendar c = Calendar.getInstance();
         c.setTimeInMillis(t);
         int m = c.get(Calendar.MINUTE);
+        if (!Lang.hr()) return String.format(Locale.ROOT, "%d:%02d", c.get(Calendar.HOUR_OF_DAY), m);
         return c.get(Calendar.HOUR_OF_DAY) + (m == 0 ? "" : String.format(Locale.ROOT, ":%02d", m));
     }
 
     private static String hour(long t) {
-        return hourOnly(t) + " h";
+        return hourOnly(t) + Lang.t("", " h");
     }
 }

@@ -79,7 +79,7 @@ echo "$OPTIONAL" | sed -e 's/#.*//' | while read -r p; do
     [ -n "$p" ] && remove "$p"
 done
 
-# ---- 4. If Lagani Launcher is installed, make it the home screen and turn off Google's ----
+# ---- 4. If Lite Launcher is installed, make it the home screen and turn off Google's ----
 if pm list packages | grep -qx "package:hr.lagani.launcher"; then
     cmd package set-home-activity hr.lagani.launcher/.HomeActivity >/dev/null 2>&1
     for p in com.google.android.leanbacklauncher com.google.android.apps.tv.launcherx com.google.android.tvlauncher; do
@@ -92,9 +92,9 @@ if pm list packages | grep -qx "package:hr.lagani.launcher"; then
         pm disable-user --user 0 com.google.android.tungsten.setupwraith >/dev/null 2>&1
         cmd package set-home-activity hr.lagani.launcher/.HomeActivity >/dev/null 2>&1
     fi
-    echo "Lagani Launcher set as the home screen."
+    echo "Lite Launcher set as the home screen."
 else
-    echo "Lagani Launcher is not installed: Google's home screen stays."
+    echo "Lite Launcher is not installed: Google's home screen stays."
 fi
 
 echo

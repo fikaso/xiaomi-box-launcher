@@ -29,11 +29,11 @@ KEY_PASS=${KEY_PASS:-$(cat "$TOOLS/release.pass" 2>/dev/null)}
 [ -n "$KEY_PASS" ] || { echo "set KEY_PASS or create $TOOLS/release.pass" >&2; exit 1; }
 if [ ! -f "$TOOLS/release.p12" ]; then
   keytool -genkeypair -keystore "$TOOLS/release.p12" -storetype PKCS12 -storepass "$KEY_PASS" \
-    -alias lagani -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Lagani Launcher" >/dev/null 2>&1
+    -alias lagani -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Lite Launcher" >/dev/null 2>&1
 fi
 # Signature (v1/JAR) with the JDK's jarsigner; targetSdk 28, so Android does not require v2.
-cp $OUT/unsigned.apk LaganiLauncher.apk
+cp $OUT/unsigned.apk LiteLauncher.apk
 jarsigner -keystore "$TOOLS/release.p12" -storetype PKCS12 -storepass "$KEY_PASS" \
-    -digestalg SHA-256 -sigalg SHA256withRSA LaganiLauncher.apk lagani >/dev/null
-jarsigner -verify LaganiLauncher.apk | head -1
-echo "Done: $(pwd)/LaganiLauncher.apk"
+    -digestalg SHA-256 -sigalg SHA256withRSA LiteLauncher.apk lagani >/dev/null
+jarsigner -verify LiteLauncher.apk | head -1
+echo "Done: $(pwd)/LiteLauncher.apk"

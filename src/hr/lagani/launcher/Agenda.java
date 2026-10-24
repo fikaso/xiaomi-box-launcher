@@ -32,12 +32,16 @@ final class Agenda {
     /** How many days ahead we look; the tile only shows the first 4 events anyway. */
     static final int DAYS = 30;
     static final String CONFIG = "calendars.txt";
+    /** Google's public calendar of Croatian holidays; "hr" or "en" picks the language of the names. */
     private static final String HOLIDAYS =
-            "https://calendar.google.com/calendar/ical/hr.croatian%23holiday%40group.v.calendar.google.com/public/basic.ics";
+            "https://calendar.google.com/calendar/ical/%s.croatian%%23holiday%%40group.v.calendar.google.com/public/basic.ics";
     private static final long ICS_REFRESH_MS = 30 * 60 * 1000L;
     /** The todo sheet is small and changes more often, so it is fetched every 5 min. */
     private static final long SHEET_REFRESH_MS = 5 * 60 * 1000L;
-    private static final String[] DAY_NAMES = {"Ned", "Pon", "Uto", "Sri", "Čet", "Pet", "Sub"};
+    private static final String[] DAY_NAMES_HR = {"Ned", "Pon", "Uto", "Sri", "Čet", "Pet", "Sub"};
+    private static final String[] DAY_NAMES_EN = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+    private static final String[] MONTHS_EN = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
     private static final long DAY_MS = 24 * 60 * 60 * 1000L;
 
     static final class Item {
@@ -148,18 +152,24 @@ final class Agenda {
     /** Public holidays in [from, to): local midnight of the day → name. Called off the main thread. */
     static java.util.TreeMap<Long, String> holidays(Context context, long from, long to) {
         java.util.TreeMap<Long, String> days = new java.util.TreeMap<>();
-        String ics = cachedIcs(context, HOLIDAYS);
+        String ics = cachedIcs(context, holidaysUrl());
         if (ics == null) return days;
         // Google's calendar also has observances (Mother's Day, Orthodox Easter...); only events
-        // described as "Državni praznik" (public holiday) are days off.
+        // described as "Državni praznik" / "Public holiday" are days off.
         StringBuilder only = new StringBuilder();
         for (String block : ics.replace("\r\n", "\n").split("BEGIN:VEVENT")) {
-            if (block.contains("\nDESCRIPTION:Državni praznik")) only.append("BEGIN:VEVENT").append(block);
+            if (block.contains("\nDESCRIPTION:Državni praznik") || block.contains("\nDESCRIPTION:Public holiday")) {
+                only.append("BEGIN:VEVENT").append(block);
+            }
         }
         for (Ics.Event e : Ics.between(only.toString(), from, to)) {
             if (e.allDay) days.put(startOfDay(e.start), e.title.trim());
         }
         return days;
+    }
+
+    private static String holidaysUrl() {
+        return String.format(Locale.ROOT, HOLIDAYS, Lang.hr() ? "hr" : "en");
     }
 
     static boolean isSheet(String url) {
@@ -173,7 +183,7 @@ final class Agenda {
     /** Built-in holidays + calendars from calendars.txt (sheets and scripts are skipped). */
     private static List<String> icsUrls(Context context) {
         List<String> urls = new ArrayList<>();
-        urls.add(HOLIDAYS);
+        urls.add(holidaysUrl());
         for (String url : lines(context)) {
             if (!isSheet(url) && !isScript(url) && !urls.contains(url)) urls.add(url);
         }
@@ -276,11 +286,13 @@ final class Agenda {
     static String dayLabel(long day) {
         long today = startOfDay(System.currentTimeMillis());
         long diff = Math.round((day - today) / (double) DAY_MS);
-        if (diff <= 0) return "Danas";
-        if (diff == 1) return "Sutra";
+        if (diff <= 0) return Lang.t("Today", "Danas");
+        if (diff == 1) return Lang.t("Tomorrow", "Sutra");
         Calendar c = Calendar.getInstance();
         c.setTimeInMillis(day);
-        return DAY_NAMES[c.get(Calendar.DAY_OF_WEEK) - 1] + " " + c.get(Calendar.DAY_OF_MONTH) + "."
+        int weekday = c.get(Calendar.DAY_OF_WEEK) - 1;
+        if (!Lang.hr()) return DAY_NAMES_EN[weekday] + " " + c.get(Calendar.DAY_OF_MONTH) + " " + MONTHS_EN[c.get(Calendar.MONTH)];
+        return DAY_NAMES_HR[weekday] + " " + c.get(Calendar.DAY_OF_MONTH) + "."
                 + (c.get(Calendar.MONTH) + 1) + ".";
     }
 

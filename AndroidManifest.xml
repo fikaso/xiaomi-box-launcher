@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="hr.lagani.launcher"
-    android:versionCode="13"
-    android:versionName="1.12">
+    android:versionCode="14"
+    android:versionName="1.13">
 
     <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="28" />
 
@@ -15,7 +15,7 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
     <application
-        android:label="Lagani Launcher"
+        android:label="Lite Launcher"
         android:icon="@drawable/banner"
         android:banner="@drawable/banner"
         android:allowBackup="false"
